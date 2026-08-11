@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ── logo mini (troque o src pela sua imagem menor) ──
      Coloque o arquivo na mesma pasta do HTML (ou ajuste o caminho abaixo). */
   const miniLogo = document.createElement('img');
-  miniLogo.src = '/apenaslogolidera.png';
+  miniLogo.src = 'apenaslogolidera.png';
   miniLogo.alt = 'Lidera360';
   miniLogo.className = 'mini-logo';
   header.querySelector('.wrap.nav-inner')?.appendChild(miniLogo);
