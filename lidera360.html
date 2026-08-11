@@ -158,7 +158,7 @@
     /* ── slide menu ──────────────────────────────────── */
     .menu-backdrop {
       position:fixed; inset:0; z-index:45;
-      background:rgba(15, 18, 114, 0.11);
+      background:rgba(15, 18, 114, 0.192);
       backdrop-filter:blur(0px);
       -webkit-backdrop-filter:blur(0px);
       opacity:0; pointer-events:none;
@@ -192,6 +192,20 @@
     .menu-panel.closing {
       /* fechamento: easing "expo-in", mais rápido e direto */
       transition:transform .3s cubic-bezier(.7,0,.84,0), opacity .3s ease, box-shadow .3s ease;
+    }
+
+    /* canvas de partículas do menu — fica atrás dos círculos e do conteúdo,
+       pois é o primeiro filho dentro de .menu-panel (que é o container de
+       posicionamento, já que tem position:fixed) */
+    #menuParticlesCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: .14;
+      z-index: 0;
     }
 
     /* entrada escalonada dos links ao abrir */
@@ -730,6 +744,9 @@ html.theme-dark .hamburger {
 
 <!-- ── Slide menu panel ───────────────────────────── -->
 <div class="menu-panel" id="menuPanel">
+  <!-- canvas de partículas animadas (cores do projeto), atrás de tudo -->
+  <canvas id="menuParticlesCanvas"></canvas>
+
   <!-- decorative circles inside panel -->
   <div class="circle" style="width:200px;height:200px;background:rgba(47,213,90,.07);top:-60px;right:-60px;"></div>
   <div class="circle" style="width:120px;height:120px;background:rgba(249,115,22,.07);bottom:40px;left:-40px;"></div>
@@ -1171,6 +1188,153 @@ html.theme-dark .hamburger {
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active')
   })
 
+  /* ── partículas do menu (canvas puro, sem libs externas) ──────────── */
+  const menuParticles = (function () {
+    const canvas = document.getElementById('menuParticlesCanvas')
+    const ctx = canvas.getContext('2d')
+
+    const cssVar = name =>
+      getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+
+    const state = {
+      max: 55,
+      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      particles: [],
+      running: false,
+      rafId: null,
+    }
+
+    function getColors () {
+      // usa as cores do próprio projeto; cai em fallback se a var não existir
+      return [
+        cssVar('--green')  || '#2fd55a',
+        cssVar('--navy')   || '#0f1272',
+        cssVar('--orange') || '#f97316',
+        cssVar('--ink')    || '#0f1272',
+      ]
+    }
+
+    function hexToRGBA (hex, alpha) {
+      hex = hex.replace('#', '')
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('')
+      const r = parseInt(hex.substring(0, 2), 16)
+      const g = parseInt(hex.substring(2, 4), 16)
+      const b = parseInt(hex.substring(4, 6), 16)
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
+
+    function randFromArray (arr) {
+      return arr[Math.floor(Math.random() * arr.length)]
+    }
+
+    class Particle {
+      constructor (w, h) {
+        this.type = Math.random() < 0.8 ? 'bubble' : 'line'
+        this.x = Math.random() * w
+        this.y = Math.random() * h
+        this.vx = (Math.random() < 0.5 ? -1 : 1) * (Math.random() * 0.35 + 0.05)
+        this.vy = (Math.random() < 0.5 ? -1 : 1) * (Math.random() * 0.35 + 0.05)
+        this.alpha = 0
+        this.maxAlpha = 0.5 + Math.random() * 0.4
+        this.hex = randFromArray(getColors())
+        this.strokeWidth = Math.random() < 0.5 ? 1 : 1.6
+
+        if (this.type === 'bubble') {
+          this.diameter = 2 + Math.random() * 6
+        } else {
+          this.length = randFromArray([6, 8, 10, 14])
+          this.angle = Math.random() * Math.PI * 2
+          this.rotateSpeed = randFromArray([0.008, 0.015, 0.025, 0.04])
+          this.rotateDir = Math.random() < 0.5 ? 1 : -1
+        }
+      }
+
+      update (w, h) {
+        if (this.alpha < this.maxAlpha) this.alpha += 0.01
+
+        this.x += this.vx
+        this.y += this.vy
+        if (this.type === 'line') this.angle += this.rotateSpeed * this.rotateDir
+
+        const margin = 20
+        return this.x > -margin && this.x < w + margin && this.y > -margin && this.y < h + margin
+      }
+
+      draw (ctx) {
+        ctx.lineWidth = this.strokeWidth
+        ctx.strokeStyle = hexToRGBA(this.hex, this.alpha)
+        ctx.save()
+
+        if (this.type === 'line') {
+          ctx.translate(this.x, this.y)
+          ctx.rotate(this.angle)
+          ctx.beginPath()
+          ctx.moveTo(-this.length / 2, 0)
+          ctx.lineTo(this.length / 2, 0)
+          ctx.stroke()
+        } else {
+          ctx.beginPath()
+          ctx.arc(this.x, this.y, this.diameter, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+
+        ctx.restore()
+      }
+    }
+
+    function resize () {
+      const panel = canvas.parentNode
+      const w = panel.offsetWidth
+      const h = panel.offsetHeight
+      canvas.width = w * state.dpr
+      canvas.height = h * state.dpr
+      canvas.style.width = w + 'px'
+      canvas.style.height = h + 'px'
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0)
+    }
+
+    function generate () {
+      const w = canvas.width / state.dpr
+      const h = canvas.height / state.dpr
+      while (state.particles.length < state.max) {
+        state.particles.push(new Particle(w, h))
+      }
+    }
+
+    function loop () {
+      if (!state.running) return
+      const w = canvas.width / state.dpr
+      const h = canvas.height / state.dpr
+
+      if (state.particles.length < state.max) generate()
+      state.particles = state.particles.filter(p => p.update(w, h))
+
+      ctx.clearRect(0, 0, w, h)
+      state.particles.forEach(p => p.draw(ctx))
+
+      state.rafId = requestAnimationFrame(loop)
+    }
+
+    return {
+      start () {
+        if (state.running) return
+        state.running = true
+        resize()
+        generate()
+        loop()
+      },
+      stop () {
+        state.running = false
+        cancelAnimationFrame(state.rafId)
+      },
+      resize () {
+        if (state.running) resize()
+      },
+    }
+  })()
+
+  window.addEventListener('resize', () => menuParticles.resize())
+
   /* ── menu ─────────────────────────────────────────── */
   const hamburger    = document.getElementById('hamburger')
   const menuBackdrop = document.getElementById('menuBackdrop')
@@ -1185,6 +1349,7 @@ html.theme-dark .hamburger {
     menuBackdrop.classList.add('open')
     menuPanel.classList.add('open')
     document.body.style.overflow = 'hidden'
+    menuParticles.start()
   }
   function closeMenu() {
     hamburger.classList.remove('open')
@@ -1194,6 +1359,7 @@ html.theme-dark .hamburger {
     document.body.style.overflow = ''
     clearTimeout(menuPanel._closeTimer)
     menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 320)
+    menuParticles.stop()
   }
 
   hamburger.addEventListener('click', () => menuPanel.classList.contains('open') ? closeMenu() : openMenu())
