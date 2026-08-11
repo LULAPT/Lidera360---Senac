@@ -225,6 +225,35 @@
       z-index: 0;
     }
 
+    /* ── tile de destaque no menu (leva pro dash.html) ──────────────
+       quadradinho estilo "atalho de app": fundo escuro, ícone + label.
+       fica logo abaixo do header do menu, antes da lista de links. */
+    .menu-tiles {
+      display:flex; gap:.75rem; flex-wrap:wrap;
+      padding:1.25rem 1.5rem 0;
+      position:relative; z-index:1;
+    }
+    .menu-tile {
+      width:132px; height:112px;
+      background:var(--navyd);
+      border-radius:18px;
+      padding:.85rem;
+      display:flex; flex-direction:column; justify-content:space-between;
+      box-shadow:0 8px 20px rgba(0,0,0,.25);
+      transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .menu-tile:hover { transform:translateY(-2px); box-shadow:0 10px 26px rgba(0,0,0,.32); }
+    .menu-tile-icon {
+      width:32px; height:32px; border-radius:9px;
+      background:rgba(47,213,90,.18);
+      display:flex; align-items:center; justify-content:center;
+      color:var(--green);
+    }
+    .menu-tile-label {
+      font-size:.78rem; font-weight:600; line-height:1.25;
+      color:#fff;
+    }
+
     /* entrada escalonada dos links ao abrir */
     @keyframes menuLinkIn {
       from { opacity:0; transform:translateX(18px); }
@@ -451,7 +480,68 @@
     .more-link { font-size:.8rem; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:4px; transition:opacity .2s; align-self:flex-end; }
     .more-link:hover { opacity:.7; }
 
-    /* tabs */
+    /* ── dashboard (trilhas) ─────────────────────────────
+       simples de propósito: cards por trilha com a lista de módulos
+       escondida atrás de <details>/<summary> nativo (sem JS extra pra
+       abrir/fechar). Dá pra evoluir depois com progresso real,
+       certificados etc. */
+    .trilha-grid {
+      display:grid; gap:1.25rem;
+      grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    }
+
+    .trilha-card {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:20px; overflow:hidden;
+      transition:box-shadow .2s, transform .2s, border-color .2s;
+    }
+    .trilha-card:hover { box-shadow:0 8px 32px rgba(15,18,114,.1); transform:translateY(-2px); }
+    .trilha-card[open] { border-color:var(--green); }
+
+    .trilha-card summary {
+      list-style:none; cursor:pointer;
+      padding:1.5rem;
+      display:flex; align-items:flex-start; gap:1rem;
+    }
+    .trilha-card summary::-webkit-details-marker { display:none; }
+
+    .trilha-icon {
+      width:48px; height:48px; border-radius:14px;
+      background:rgba(47,213,90,.12);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.4rem; flex-shrink:0;
+    }
+
+    .trilha-info { flex:1; min-width:0; }
+    .trilha-name { font-weight:700; font-size:1rem; margin-bottom:.35rem; }
+    .trilha-desc { font-size:.8rem; line-height:1.55; color:var(--muted); margin-bottom:.6rem; }
+    .trilha-meta { font-size:.68rem; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:.05em; }
+
+    .trilha-toggle-arrow {
+      flex-shrink:0; color:var(--green); margin-top:.35rem;
+      transition:transform .25s ease;
+    }
+    .trilha-card[open] .trilha-toggle-arrow { transform:rotate(90deg); }
+
+    .trilha-modules {
+      padding:0 1.5rem 1.5rem 1.5rem;
+      display:flex; flex-direction:column; gap:.5rem;
+    }
+    .trilha-module {
+      display:flex; align-items:center; gap:.65rem;
+      padding:.65rem .75rem;
+      background:var(--bg); border-radius:10px;
+      font-size:.8rem; color:var(--ink);
+    }
+    .trilha-module .module-num {
+      width:20px; height:20px; border-radius:50%;
+      background:var(--white); border:1.5px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      font-size:.65rem; font-weight:700; color:var(--muted);
+      flex-shrink:0;
+    }
+
+    /* tabs (mantidos pro futuro; sem uso no dashboard simples de agora) */
     .tabs { display:flex; gap:.5rem; overflow-x:auto; margin-bottom:1.5rem; padding-bottom:2px; scrollbar-width:none; flex-wrap:wrap; }
     .tabs::-webkit-scrollbar { display:none; }
     .tab-btn {
@@ -785,9 +875,23 @@ html.theme-dark .hamburger {
     </button>
   </div>
 
+  <!-- atalhos em destaque -->
+  <div class="menu-tiles">
+    <a href="dash.html" class="menu-tile">
+      <div class="menu-tile-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="4" opacity=".3"/>
+          <path d="M7 15l3.2-3.6 2.3 2 4.5-5.4"/>
+          <circle cx="17" cy="8" r="1.1" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <span class="menu-tile-label">Dashboard de performance</span>
+    </a>
+  </div>
+
   <nav class="menu-nav">
     <a href="#cursos">
-      <div><p class="link-title">Cursos</p><p class="link-sub">400+ cursos disponíveis</p></div>
+      <div><p class="link-title">Trilhas</p><p class="link-sub">Confira os nossos cursos</p></div>
       <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
     <a href="#planos">
@@ -877,7 +981,7 @@ html.theme-dark .hamburger {
     </a>
 
     <nav class="nav-links hide-mobile">
-      <a href="#cursos">Cursos</a>
+      <a href="#cursos">Dashboard</a>
       <a href="#planos">Planos</a>
       <a href="#">Para Empresas</a>
       <a href="#">Blog</a>
@@ -950,33 +1054,26 @@ html.theme-dark .hamburger {
   </div>
 </section>
 
-<!-- ── Courses ────────────────────────────────────── -->
+<!-- ── Dashboard (trilhas) ──────────────────────────── -->
 <section class="courses-section" id="cursos">
   <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.05);top:-80px;right:-80px;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
     <div class="section-head">
       <div>
-        <p class="section-eyebrow">Catálogo</p>
-        <h2 class="section-title">Cursos para cada<br><span class="accent">necessidade do negócio</span></h2>
+        <p class="section-eyebrow">Dashboard</p>
+        <h2 class="section-title">Suas trilhas de<br><span class="accent">desenvolvimento</span></h2>
       </div>
-      <a href="#" class="more-link">Ver catálogo completo <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
     </div>
 
-    <div class="tabs" id="courseTabs">
-      <button class="tab-btn active" data-tab="lideranca">Liderança</button>
-      <button class="tab-btn" data-tab="vendas">Vendas</button>
-      <button class="tab-btn" data-tab="compliance">Compliance</button>
-      <button class="tab-btn" data-tab="produtividade">Produtividade</button>
-      <button class="tab-btn" data-tab="rh">RH &amp; Cultura</button>
-      <button class="tab-btn" data-tab="tecnologia">Tecnologia</button>
+    <!-- resumo rápido -->
+    <div class="stats-bar" style="margin-top:0; margin-bottom:2.5rem;">
+      <div class="stat-cell"><p class="stat-val" id="statTrilhas">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
+      <div class="stat-cell"><p class="stat-val" id="statModulos">0</p><p class="stat-lbl">Módulos no total</p></div>
+      <div class="stat-cell"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
+      <div class="stat-cell"><p class="stat-val">Seu ritmo</p><p class="stat-lbl">Avance quando quiser</p></div>
     </div>
 
-    <div id="tab-lideranca" class="tab-panel active"><div class="courses-grid" id="grid-lideranca"></div></div>
-    <div id="tab-vendas"    class="tab-panel"><div class="courses-grid" id="grid-vendas"></div></div>
-    <div id="tab-compliance" class="tab-panel"><div class="courses-grid" id="grid-compliance"></div></div>
-    <div id="tab-produtividade" class="tab-panel"><div class="courses-grid" id="grid-produtividade"></div></div>
-    <div id="tab-rh"        class="tab-panel"><div class="courses-grid" id="grid-rh"></div></div>
-    <div id="tab-tecnologia" class="tab-panel"><div class="courses-grid" id="grid-tecnologia"></div></div>
+    <div class="trilha-grid" id="trilhaGrid"></div>
   </div>
 </section>
 
@@ -1124,86 +1221,106 @@ html.theme-dark .hamburger {
 </footer>
 
 <script>
-  /* ── data ─────────────────────────────────────────── */
-  const COURSES = {
-    lideranca: [
-      { title:'Liderança Situacional',      duration:'4h 20min', level:'Intermediário', tag:'Mais popular', img:'photo-1552664730-d307ca884978' },
-      { title:'Gestão de Equipes Remotas',  duration:'3h 10min', level:'Avançado',      tag:'Novo',         img:'photo-1600880292203-757bb62b4baf' },
-      { title:'Feedback e Desenvolvimento', duration:'2h 45min', level:'Básico',        tag:'',             img:'photo-1519389950473-47ba0277781c' },
-      { title:'Comunicação Executiva',      duration:'5h 00min', level:'Avançado',      tag:'',             img:'photo-1557804506-669a67965ba0' },
-    ],
-    vendas: [
-      { title:'Técnicas de Negociação', duration:'3h 30min', level:'Intermediário', tag:'Mais popular', img:'photo-1521737604893-d14cc237f11d' },
-      { title:'CRM e Funil de Vendas',  duration:'2h 50min', level:'Básico',        tag:'',             img:'photo-1553877522-43269d4ea984' },
-      { title:'Inside Sales Avançado',  duration:'4h 15min', level:'Avançado',      tag:'Novo',         img:'photo-1560472354-b33ff0c44a43' },
-      { title:'Atendimento ao Cliente', duration:'2h 00min', level:'Básico',        tag:'',             img:'photo-1556761175-b413da4baf72' },
-    ],
-    compliance: [
-      { title:'LGPD na Prática',                 duration:'3h 00min', level:'Básico',        tag:'Obrigatório', img:'photo-1450101499163-c8848c66ca85' },
-      { title:'Ética Corporativa',               duration:'2h 30min', level:'Básico',        tag:'Obrigatório', img:'photo-1507003211169-0a1dd7228f2d' },
-      { title:'Prevenção à Lavagem de Dinheiro', duration:'4h 00min', level:'Intermediário', tag:'',            img:'photo-1554224155-6726b3ff858f' },
-      { title:'Segurança da Informação',         duration:'3h 45min', level:'Intermediário', tag:'Novo',        img:'photo-1563013544-824ae1b704d3' },
-    ],
-    produtividade: [
-      { title:'Gestão do Tempo',    duration:'2h 15min', level:'Básico',        tag:'Mais popular', img:'photo-1484480974693-6ca0a78fb36b' },
-      { title:'Metodologias Ágeis', duration:'5h 30min', level:'Intermediário', tag:'',             img:'photo-1507925921958-8a62f3d1a50d' },
-      { title:'OKRs na Prática',    duration:'3h 20min', level:'Intermediário', tag:'Novo',         img:'photo-1460925895917-afdab827c52f' },
-      { title:'Deep Work e Foco',   duration:'2h 00min', level:'Básico',        tag:'',             img:'photo-1434030216411-0b793f4b4173' },
-    ],
-    rh: [
-      { title:'Diversidade e Inclusão', duration:'3h 00min', level:'Básico',        tag:'Recomendado', img:'photo-1573164713988-8665fc963095' },
-      { title:'Onboarding Eficaz',      duration:'2h 30min', level:'Intermediário', tag:'',            img:'photo-1531482615713-2afd69097998' },
-      { title:'Employer Branding',      duration:'3h 50min', level:'Avançado',      tag:'Novo',        img:'photo-1522071820081-009f0129c71c' },
-      { title:'Clima e Engajamento',    duration:'2h 45min', level:'Intermediário', tag:'',            img:'photo-1568992687947-868a62a9f521' },
-    ],
-    tecnologia: [
-      { title:'Excel Avançado para Negócios',        duration:'6h 00min', level:'Intermediário', tag:'Mais popular', img:'photo-1498050108023-c5249f4df085' },
-      { title:'Inteligência Artificial no Trabalho', duration:'4h 30min', level:'Básico',        tag:'Novo',         img:'photo-1677442136019-21780ecad995' },
-      { title:'Power BI Essencial',                  duration:'5h 15min', level:'Intermediário', tag:'',             img:'photo-1551288049-bebda4e38f71' },
-      { title:'Segurança Digital para Equipes',      duration:'2h 20min', level:'Básico',        tag:'',             img:'photo-1510511459019-5dda7724fd87' },
-    ],
-  }
+  /* ── data: trilhas de desenvolvimento (dashboard) ──────────────────
+     conteúdo real do Lidera360, organizado por trilha/módulo. */
+  const TRILHAS = [
+    {
+      id: 'vendas',
+      nome: 'Vendas',
+      icon: '💼',
+      desc: 'Processo comercial, relacionamento com clientes, gestão financeira e operacional e aplicação prática da legislação de proteção ao consumidor.',
+      modulos: [
+        'Técnicas de Negociação',
+        'CRM e Funil de Vendas',
+        'Controle e Gestão de Estoque',
+        'Fluxo de Caixa',
+        'CDC: Código de Defesa do Consumidor na Prática',
+      ],
+    },
+    {
+      id: 'lideranca',
+      nome: 'Liderança',
+      icon: '🧭',
+      desc: 'Preparação para conduzir equipes, administrar diferentes perfis, desenvolver pessoas e estabelecer uma comunicação estratégica.',
+      modulos: [
+        'Liderança Situacional',
+        'Gestão de Equipes Remotas',
+        'Feedback e Desenvolvimento',
+        'Comunicação Executiva',
+      ],
+    },
+    {
+      id: 'tecnologia',
+      nome: 'Tecnologia',
+      icon: '💻',
+      desc: 'Competências digitais fundamentais para aumentar produtividade, segurança e capacidade de análise no dia a dia.',
+      modulos: [
+        'Excel',
+        'Inteligência Artificial no Trabalho',
+        'Power BI Essencial',
+        'Segurança Digital para Equipes',
+        'T.I. Básico',
+      ],
+    },
+    {
+      id: 'rh',
+      nome: 'RH & Cultura',
+      icon: '🤝',
+      desc: 'Gestão de pessoas, integração, diversidade, experiência dos colaboradores e ambientes organizacionais mais saudáveis.',
+      modulos: [
+        'Diversidade e Inclusão',
+        'Onboarding Eficaz',
+        'Employer Branding',
+        'Clima e Engajamento',
+      ],
+    },
+    {
+      id: 'produtividade',
+      nome: 'Produtividade',
+      icon: '⚡',
+      desc: 'Métodos e ferramentas para organização pessoal e profissional, gestão de prioridades e qualidade nas entregas.',
+      modulos: [
+        'Gestão de Tempo',
+        'Metodologias Ágeis',
+        'OKRs na Prática',
+        'Deep Work e Foco',
+      ],
+    },
+  ]
 
-  const LEVEL_COLORS = {
-    'Básico':'#22b847', 'Intermediário':'#0f1272',
-    'Avançado':'#f97316', 'Obrigatório':'#ef4444', 'Recomendado':'#3b82f6',
-  }
+  /* ── render do dashboard de trilhas ─────────────────────────────── */
+  function renderTrilhas() {
+    const grid = document.getElementById('trilhaGrid')
+    if (!grid) return
 
-  /* ── render course cards ──────────────────────────── */
-  function renderCourses() {
-    Object.entries(COURSES).forEach(([key, list]) => {
-      const grid = document.getElementById('grid-' + key)
-      if (!grid) return
-      grid.innerHTML = list.map(c => {
-        const color = LEVEL_COLORS[c.level] || '#6b7280'
-        const tag = c.tag ? `<span class="course-tag">${c.tag}</span>` : ''
-        return `
-          <div class="course-card">
-            <div class="course-thumb">
-              <img src="https://images.unsplash.com/${c.img}?w=400&h=240&fit=crop&auto=format" alt="${c.title}" loading="lazy"/>
-              ${tag}
+    grid.innerHTML = TRILHAS.map(t => `
+      <details class="trilha-card">
+        <summary>
+          <div class="trilha-icon">${t.icon}</div>
+          <div class="trilha-info">
+            <p class="trilha-name">${t.nome}</p>
+            <p class="trilha-desc">${t.desc}</p>
+            <p class="trilha-meta">${t.modulos.length} módulos</p>
+          </div>
+          <svg class="trilha-toggle-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </summary>
+        <div class="trilha-modules">
+          ${t.modulos.map((m, i) => `
+            <div class="trilha-module">
+              <span class="module-num">${i + 1}</span>
+              <span>${m}</span>
             </div>
-            <div class="course-body">
-              <p class="course-title">${c.title}</p>
-              <div class="course-meta">
-                <span class="course-dur">${c.duration}</span>
-                <span class="course-level" style="color:${color};border-color:${color}">${c.level}</span>
-              </div>
-            </div>
-          </div>`
-      }).join('')
-    })
-  }
+          `).join('')}
+        </div>
+      </details>
+    `).join('')
 
-  /* ── tabs ─────────────────────────────────────────── */
-  document.getElementById('courseTabs').addEventListener('click', e => {
-    const btn = e.target.closest('.tab-btn')
-    if (!btn) return
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
-    btn.classList.add('active')
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active')
-  })
+    const totalModulos = TRILHAS.reduce((sum, t) => sum + t.modulos.length, 0)
+    document.getElementById('statTrilhas').textContent = TRILHAS.length
+    document.getElementById('statModulos').textContent = totalModulos
+  }
 
   /* ── partículas do menu (canvas puro, sem libs externas) ──────────── */
   const menuParticles = (function () {
@@ -1383,7 +1500,7 @@ html.theme-dark .hamburger {
   menuBackdrop.addEventListener('click', closeMenu)
   menuClose.addEventListener('click', closeMenu)
   menuLoginBtn.addEventListener('click', () => { closeMenu(); openLogin() })
-  menuPanel.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu))
+  menuPanel.querySelectorAll('.menu-nav a').forEach(a => a.addEventListener('click', closeMenu))
 
   /* ── login modal ──────────────────────────────────── */
   const loginModal = document.getElementById('loginModal')
@@ -1420,7 +1537,7 @@ html.theme-dark .hamburger {
   })
 
   /* ── init ─────────────────────────────────────────── */
-  renderCourses()
+  renderTrilhas()
 
   /* ── aura do vídeo (sobre nós): flutua sozinha + acompanha o mouse ── */
   ;(function () {
