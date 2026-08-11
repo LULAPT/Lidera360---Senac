@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="theme-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu Dashboard — Lidera360</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── reset ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color .35s ease, color .35s ease;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: 'Poppins', sans-serif; cursor: pointer; }
+    img { display: block; }
+    ul { list-style: none; }
+    ::-webkit-scrollbar { width: 0; }
+    ::selection { background: rgba(47,213,90,.3); color: var(--ink); }
+
+    * { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
+    a, button, input, [tabindex] { outline: none; }
+    a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--green);
+      outline-offset: 2px;
+    }
+
+    /* ── tokens ────────────────────────────────────── */
+    :root {
+      --navy:   #0f1272;
+      --navyd:  #090b52;
+      --green:  #2fd55a;
+      --greend: #22b847;
+      --orange: #f97316;
+      --bg:     #f5f6ff;
+      --white:  #ffffff;
+      --muted:  #6b7280;
+      --border: rgba(15,18,114,.14);
+      --ink:    var(--navy);
+    }
+    html.theme-dark {
+      --bg:     #12132b;
+      --white:  #1b1c3a;
+      --muted:  #9497c4;
+      --border: rgba(255,255,255,.14);
+      --navyd:  #05061c;
+      --ink:    #eef0ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto {
+        --bg:     #12132b;
+        --white:  #1b1c3a;
+        --muted:  #9497c4;
+        --border: rgba(255,255,255,.14);
+        --navyd:  #05061c;
+        --ink:    #eef0ff;
+      }
+    }
+
+    /* ── keyframes ─────────────────────────────────── */
+    @keyframes fade-in   { from{opacity:0} to{opacity:1} }
+    @keyframes fade-out  { from{opacity:1} to{opacity:0} }
+    @keyframes menuLinkIn {
+      from { opacity:0; transform:translateX(18px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    @keyframes dashCardIn {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes moduleFadeIn {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── layout helpers ────────────────────────────── */
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 0 2.5rem; }
+    @media(max-width:768px){ .wrap{ padding:0 1.25rem; } }
+    .hide-mobile { display:none; }
+    @media(min-width:769px){ .hide-mobile{ display:flex; } }
+
+    .circle { position:absolute; border-radius:50%; pointer-events:none; }
+
+    /* ── buttons ────────────────────────────────────── */
+    .btn-green {
+      display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+      padding:.875rem 2rem;
+      background:var(--green); color:#fff;
+      font-weight:700; font-size:.9rem;
+      border:none; border-radius:50px;
+      box-shadow:0 4px 20px rgba(47,213,90,.35);
+      transition:background .2s;
+      cursor:pointer;
+    }
+    .btn-green:hover { background:var(--greend); }
+    .btn-green.full  { width:100%; }
+
+    .btn-outline {
+      display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+      padding:.75rem 1.5rem;
+      background:transparent; color:var(--ink);
+      font-weight:700; font-size:.8rem;
+      border:2px solid var(--navy); border-radius:50px;
+      transition:background .2s, color .2s;
+      cursor:pointer;
+    }
+    .btn-outline:hover { background:var(--navy); color:#fff; }
+    .btn-outline.full { width:100%; }
+
+    /* ── nav ─────────────────────────────────────────── */
+    .nav {
+      position:fixed; top:0; left:0; right:0; z-index:40;
+      background:rgba(255,255,255,.95);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+    }
+    html.theme-dark .nav { background: rgba(18,19,43,.85); }
+    @media (prefers-color-scheme: dark) { html.theme-auto .nav { background: rgba(18,19,43,.85); } }
+
+    .nav-inner { height:4rem; display:flex; align-items:center; justify-content:space-between; }
+    .logo { display:flex; align-items:center; gap:.5rem; }
+    .logo-text { font-weight:800; font-size:1.2rem; color:var(--ink); }
+    .logo-text span { color:var(--green); }
+    .logo-mark { flex-shrink:0; }
+    html.theme-dark svg [fill="#0f1272"] { fill: var(--ink); }
+    html.theme-dark svg [fill="#090b52"] { fill: #4b4f8f; }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto svg [fill="#0f1272"] { fill: var(--ink); }
+      html.theme-auto svg [fill="#090b52"] { fill: #4b4f8f; }
+    }
+
+    .nav-actions { display:flex; align-items:center; gap:.75rem; }
+
+    .hamburger {
+      display:flex; flex-direction:column; justify-content:center;
+      align-items:center; gap:5px;
+      width:40px; height:40px;
+      border:1.5px solid var(--border); border-radius:10px;
+      background:transparent;
+      transition:background .2s, border-color .2s;
+      flex-shrink:0;
+    }
+    .hamburger span {
+      display:block; width:16px; height:1.5px;
+      background:var(--navy); border-radius:2px;
+      transition:transform .25s, opacity .2s, background .2s;
+    }
+    html.theme-dark .hamburger span { background: var(--ink); }
+    html.theme-dark .hamburger { border-color: var(--border); }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .hamburger span { background: var(--ink); }
+      html.theme-auto .hamburger { border-color: var(--border); }
+    }
+    .hamburger.open { background:var(--bg); border-color:var(--green); }
+    .hamburger.open span { background:var(--green); }
+    .hamburger.open .bar1 { transform:rotate(45deg) translate(4.5px,4.5px); }
+    .hamburger.open .bar2 { opacity:0; }
+    .hamburger.open .bar3 { transform:rotate(-45deg) translate(4.5px,-4.5px); }
+
+    @media (max-width: 700px) {
+      .nav-actions .hide-mobile { display: none !important; }
+      .hamburger { display: flex !important; }
+    }
+
+    /* ── slide menu ──────────────────────────────────── */
+    .menu-backdrop {
+      position:fixed; inset:0; z-index:45;
+      background:rgba(15, 18, 114, 0.192);
+      opacity:0; pointer-events:none;
+      transition:opacity .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease;
+    }
+    .menu-backdrop.open {
+      opacity:1; pointer-events:auto;
+      backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px);
+    }
+
+    .menu-panel {
+      position:fixed; top:0; right:0; bottom:0; z-index:46;
+      width:min(360px,88vw);
+      background:var(--white);
+      border-left:2px solid var(--green);
+      transform:translateX(100%);
+      opacity:.6;
+      transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, box-shadow .4s ease,
+                 background-color .35s ease, color .35s ease, border-color .35s ease;
+      display:flex; flex-direction:column;
+      box-shadow:-8px 0 48px rgba(15,18,114,0);
+      overflow:hidden;
+      will-change:transform;
+    }
+    .menu-panel.open {
+      transform:translateX(0);
+      opacity:1;
+      box-shadow:-8px 0 48px rgba(15,18,114,.12);
+    }
+    .menu-panel.closing {
+      transition:transform .3s cubic-bezier(.7,0,.84,0), opacity .3s ease, box-shadow .3s ease;
+    }
+
+    .menu-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1.25rem 1.5rem;
+      border-bottom:1px solid var(--border);
+      position:relative; z-index:1;
+    }
+    .menu-close {
+      width:36px; height:36px; border-radius:50%;
+      border:1.5px solid var(--border); background:transparent;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--ink); transition:border-color .2s;
+    }
+    .menu-close:hover { border-color:var(--ink); }
+
+    .menu-nav { flex:1; display:flex; flex-direction:column; padding:1.5rem; gap:.25rem; position:relative; z-index:1; }
+    .menu-nav a {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.875rem 1rem; border-radius:12px;
+      transition:background .15s;
+      opacity:0;
+      animation:menuLinkIn .5s cubic-bezier(.16,1,.3,1) both;
+      animation-delay:.1s;
+    }
+    .menu-panel:not(.open) .menu-nav a { animation:none; opacity:0; }
+    .menu-nav a:hover { background:var(--bg); }
+    .menu-nav .link-title { font-weight:700; font-size:1rem; color:var(--ink); }
+    .menu-nav .link-sub   { font-size:.72rem; color:var(--muted); margin-top:2px; }
+    .menu-nav .arrow      { color:var(--green); flex-shrink:0; transition:transform .2s; }
+    .menu-nav a:hover .arrow { transform:translateX(4px); }
+
+    .menu-footer {
+      padding:1.5rem;
+      border-top:1px solid var(--border);
+      display:flex; flex-direction:column; gap:.75rem;
+      position:relative; z-index:1;
+    }
+    .menu-note { font-size:.7rem; text-align:center; color:var(--muted); }
+
+    /* ── seções gerais / títulos ──────────────────────── */
+    .section-eyebrow { font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:.5rem; }
+    .section-title {
+      font-size:clamp(1.5rem,3vw,2.1rem);
+      font-weight:800; line-height:1.2;
+    }
+    .section-title .accent { color:var(--green); }
+    .section-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:1rem; margin-bottom:2rem; }
+
+    /* ── dashboard: cabeçalho com perfil ──────────────── */
+    .dash-hero { position:relative; overflow:hidden; padding:6.5rem 0 1.5rem; }
+    @media(min-width:769px){ .dash-hero{ padding:8rem 0 1.5rem; } }
+
+    .dash-profile { display:flex; align-items:center; gap:1.1rem; flex-wrap:wrap; }
+    .dash-avatar {
+      width:76px; height:76px; border-radius:50%; flex-shrink:0;
+      background:linear-gradient(135deg, var(--green), var(--navy));
+      background-size:cover; background-position:center;
+      color:#fff; font-weight:800; font-size:1.05rem;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 8px 20px rgba(15,18,114,.2);
+      position:relative; overflow:hidden; cursor:pointer;
+    }
+    .dash-avatar-overlay {
+      position:absolute; inset:0; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(9,11,82,0); opacity:0;
+      transition:opacity .25s ease, background-color .25s ease;
+    }
+    .dash-avatar:hover .dash-avatar-overlay {
+      opacity:1; background:rgba(9,11,82,.6);
+    }
+    .dash-avatar-overlay svg { width:22px; height:22px; }
+    .dash-greeting { font-size:1.35rem; font-weight:800; line-height:1.2; }
+    .dash-sub { font-size:.8rem; color:var(--muted); margin-top:2px; }
+    .dash-back { margin-left:auto; }
+
+    /* ── faixa de estatísticas (horizontal) ───────────── */
+    .stats-bar {
+      display:grid; grid-template-columns:1fr 1fr;
+      border:2px solid var(--border);
+      border-radius:16px; overflow:hidden;
+      margin-top:2.25rem;
+      gap:1px; background:var(--border);
+    }
+    @media(min-width:769px){ .stats-bar{ grid-template-columns:repeat(4,1fr); } }
+    .stat-cell { background:var(--white); padding:1.25rem 1.5rem; transition:background-color .35s ease; }
+    .stat-val  { font-size:clamp(1.4rem,3vw,2rem); font-weight:800; color:var(--green); line-height:1; }
+    .stat-lbl  { font-size:.72rem; color:var(--muted); margin-top:4px; }
+
+    /* ── trilhas (cards com abertura via hover no desktop /
+       via tap no touch) ──────────────────────────────── */
+    .dash-trilhas { position:relative; padding:2.5rem 0 5rem; }
+
+    .trilha-grid {
+      display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+      align-items:start; /* cada card mantém sua própria altura em vez de esticar junto com o vizinho */
+    }
+
+    .trilha-card {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:20px; overflow:hidden;
+      transition:box-shadow .3s ease, transform .3s ease, border-color .3s ease, background-color .35s ease;
+      opacity:0;
+      animation:dashCardIn .5s ease both;
+    }
+
+    /* estado "aberto": compartilhado por foco de teclado (todos os
+       dispositivos) e pela classe .is-open, que o JS aplica no tap
+       quando o dispositivo não tem hover real (touch) */
+    .trilha-card:focus-within,
+    .trilha-card.is-open {
+      box-shadow:0 8px 32px rgba(15,18,114,.1);
+      transform:translateY(-2px);
+      border-color:var(--green);
+    }
+    .trilha-card:focus-within .trilha-toggle-arrow,
+    .trilha-card.is-open .trilha-toggle-arrow { transform:rotate(90deg); }
+    .trilha-card:focus-within .trilha-modules-wrap,
+    .trilha-card.is-open .trilha-modules-wrap { grid-template-rows: 1fr; }
+    .trilha-card:focus-within .trilha-module,
+    .trilha-card.is-open .trilha-module {
+      animation:moduleFadeIn .28s ease forwards;
+      animation-delay:calc(var(--i, 0) * 45ms);
+    }
+
+    /* :hover só entra em ação em dispositivos que realmente têm mouse
+       (hover:hover + pointer:fine) — em telas de toque isso nunca
+       "gruda" ligado depois do tap, porque a regra nem existe ali */
+    @media (hover:hover) and (pointer:fine) {
+      .trilha-card:hover {
+        box-shadow:0 8px 32px rgba(15,18,114,.1);
+        transform:translateY(-2px);
+        border-color:var(--green);
+      }
+      .trilha-card:hover .trilha-toggle-arrow { transform:rotate(90deg); }
+      .trilha-card:hover .trilha-modules-wrap { grid-template-rows: 1fr; }
+      .trilha-card:hover .trilha-module {
+        animation:moduleFadeIn .28s ease forwards;
+        animation-delay:calc(var(--i, 0) * 45ms);
+      }
+    }
+
+    .trilha-summary {
+      cursor:pointer;
+      padding:1.5rem;
+      display:flex; align-items:flex-start; gap:1rem;
+    }
+
+    .trilha-icon {
+      width:48px; height:48px; border-radius:14px;
+      background:rgba(47,213,90,.12);
+      color:var(--green);
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+    }
+    .trilha-icon svg { width:23px; height:23px; }
+
+    .trilha-info { flex:1; min-width:0; }
+    .trilha-name { font-weight:700; font-size:1rem; margin-bottom:.35rem; }
+    .trilha-desc { font-size:.8rem; line-height:1.55; color:var(--muted); margin-bottom:.8rem; }
+
+    .trilha-progress-bar {
+      width:100%; height:8px; border-radius:50px;
+      background:var(--bg); border:1px solid var(--border);
+      overflow:hidden;
+    }
+    .trilha-progress-fill {
+      height:100%; border-radius:50px;
+      background:linear-gradient(90deg, var(--green), var(--greend));
+      transition:width 1s cubic-bezier(.22,.9,.32,1);
+      width:0%;
+    }
+    .trilha-progress-label {
+      display:flex; justify-content:space-between; align-items:baseline;
+      font-size:.68rem; color:var(--muted); margin-top:.45rem;
+    }
+    .trilha-progress-pct { font-weight:800; color:var(--green); font-size:.78rem; }
+    .trilha-progress-pct.is-complete { color:var(--orange); }
+
+    .trilha-toggle-arrow {
+      flex-shrink:0; color:var(--green); margin-top:.35rem;
+      transition:transform .35s cubic-bezier(.16,1,.3,1);
+    }
+
+    /* truque do grid-template-rows 0fr -> 1fr: anima a altura sem
+       precisar calcular o valor exato em JS, e o resultado fica
+       bem mais suave que um max-height "chutado" */
+    .trilha-modules-wrap {
+      display:grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .45s cubic-bezier(.16,1,.3,1);
+    }
+    .trilha-modules-inner { overflow:hidden; }
+
+    .trilha-modules {
+      padding:0 1.5rem 1.5rem 1.5rem;
+      display:flex; flex-direction:column; gap:.5rem;
+    }
+    .trilha-module {
+      display:flex; align-items:center; gap:.65rem;
+      padding:.65rem .75rem;
+      background:var(--bg); border-radius:10px;
+      font-size:.8rem; color:var(--ink);
+      transition:background-color .2s;
+      opacity:0;
+    }
+    .trilha-module .module-num {
+      width:20px; height:20px; border-radius:50%;
+      background:var(--white); border:1.5px solid var(--border);
+      display:flex; align-items:center; justify-content:center;
+      font-size:.65rem; font-weight:700; color:var(--muted);
+      flex-shrink:0;
+    }
+    .trilha-module.done { background:rgba(47,213,90,.1); }
+    .trilha-module.done .module-num {
+      background:var(--green); border-color:var(--green); color:#fff;
+    }
+    .trilha-module.done span:last-child { color:var(--ink); }
+    .trilha-module:not(.done) span:last-child { color:var(--muted); }
+
+    /* ── rodapé simples ────────────────────────────────── */
+    footer { background:var(--navyd); color:rgba(255,255,255,.55); padding:2rem 0; transition:background-color .35s ease; }
+    .footer-inner { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; }
+    .footer-copy { font-size:.72rem; color:rgba(255,255,255,.35); }
+    .footer-back { font-size:.78rem; font-weight:600; color:rgba(255,255,255,.7); display:inline-flex; align-items:center; gap:.4rem; transition:color .2s; }
+    .footer-back:hover { color:#fff; }
+
+    /* ── floating theme-toggle button (injetado por themeSwitch.js) ── */
+    .theme-toggle {
+      top: auto !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      z-index: 41 !important;
+    }
+    @media (max-width: 480px) {
+      .theme-toggle { width: 48px !important; height: 48px !important; bottom: 16px !important; right: 16px !important; }
+      .theme-toggle .sun-icon, .theme-toggle .moon-icon { width: 24px !important; height: 24px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Slide menu backdrop ────────────────────────── -->
+<div class="menu-backdrop" id="menuBackdrop"></div>
+
+<!-- ── Slide menu panel (igual ao do index, só que com um único
+     atalho: voltar para a página inicial) ────────────────────── -->
+<div class="menu-panel" id="menuPanel">
+  <div class="circle" style="width:200px;height:200px;background:rgba(47,213,90,.07);top:-60px;right:-60px;"></div>
+  <div class="circle" style="width:120px;height:120px;background:rgba(249,115,22,.07);bottom:40px;left:-40px;"></div>
+
+  <div class="menu-header">
+    <div class="logo">
+      <svg class="logo-mark" width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,4 44,40 4,40" fill="#0f1272"/>
+        <polygon points="14,40 24,22 34,40" fill="#090b52" opacity=".7"/>
+        <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
+      </svg>
+      <span class="logo-text">Lidera<span>360</span></span>
+    </div>
+    <button class="menu-close" id="menuClose" aria-label="Fechar">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="menu-nav">
+    <a href="index.html">
+      <div>
+        <p class="link-title">Início</p>
+        <p class="link-sub">Voltar para a página inicial</p>
+      </div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </nav>
+
+  <div class="menu-footer">
+    <button class="btn-green full" onclick="window.location='index.html'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+      Voltar ao site
+    </button>
+    <p class="menu-note">Você está no seu Dashboard pessoal</p>
+  </div>
+</div>
+
+<!-- ── Nav ────────────────────────────────────────── -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="index.html" class="logo">
+      <svg class="logo-mark" width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,4 44,40 4,40" fill="#0f1272"/>
+        <polygon points="14,40 24,22 34,40" fill="#090b52" opacity=".7"/>
+        <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
+      </svg>
+      <span class="logo-text">Lidera<span>360</span></span>
+    </a>
+
+    <div class="nav-actions">
+      <a href="index.html" class="btn-outline hide-mobile">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+        Início
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span class="bar1"></span>
+        <span class="bar2"></span>
+        <span class="bar3"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ── Cabeçalho do dashboard: perfil "logado" ─────── -->
+<section class="dash-hero">
+  <div class="circle" style="width:420px;height:420px;background:rgba(15,18,114,.04);top:-140px;right:-160px;"></div>
+  <div class="circle" style="width:260px;height:260px;background:rgba(47,213,90,.07);bottom:-80px;left:-100px;"></div>
+
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="dash-profile">
+      <div class="dash-avatar" id="dashAvatar" style="background-image:url('/src/img/chorro_avatar.jpg');">
+        <span class="dash-avatar-overlay">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+      </div>
+      <div>
+        <p class="dash-greeting" id="dashGreeting">Olá, Dharlan 👋</p>
+        <p class="dash-sub" id="dashSub">Auxiliar de vendedor · Narciso Enxovais</p>
+      </div>
+      <a href="index.html" class="btn-outline dash-back hide-mobile">Voltar ao site</a>
+    </div>
+
+    <!-- resumo rápido, horizontal -->
+    <div class="stats-bar">
+      <div class="stat-cell"><p class="stat-val" id="statEmAndamento">0</p><p class="stat-lbl">Trilhas em andamento</p></div>
+      <div class="stat-cell"><p class="stat-val" id="statConcluidas">0</p><p class="stat-lbl">Trilhas concluídas</p></div>
+      <div class="stat-cell"><p class="stat-val" id="statCertificados">0</p><p class="stat-lbl">Certificados conquistados</p></div>
+      <div class="stat-cell"><p class="stat-val" id="statHoras">0h</p><p class="stat-lbl">Horas estudadas</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Trilhas com progresso individual (abre no hover / tap) ── -->
+<section class="dash-trilhas">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="section-eyebrow">Seu progresso</p>
+        <h2 class="section-title">Suas trilhas de <span class="accent">desenvolvimento</span></h2>
+      </div>
+    </div>
+
+    <div class="trilha-grid" id="trilhaGrid"></div>
+  </div>
+</section>
+
+<!-- ── Footer simples ────────────────────────────────── -->
+<footer>
+  <div class="wrap footer-inner">
+    <p class="footer-copy">© 2026 Lidera360. Todos os direitos reservados.</p>
+    <a href="index.html" class="footer-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Voltar para o site
+    </a>
+  </div>
+</footer>
+
+<script>
+  /* ── dados: mesmas trilhas/módulos do catálogo no index ─────────── */
+  const TRILHAS = [
+    {
+      id: 'vendas',
+      nome: 'Vendas',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>',
+      desc: 'Processo comercial, relacionamento com clientes, gestão financeira e operacional e aplicação prática da legislação de proteção ao consumidor.',
+      modulos: [
+        'Técnicas de Negociação',
+        'CRM e Funil de Vendas',
+        'Controle e Gestão de Estoque',
+        'Fluxo de Caixa',
+        'CDC: Código de Defesa do Consumidor na Prática',
+      ],
+    },
+    {
+      id: 'lideranca',
+      nome: 'Liderança',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+      desc: 'Preparação para conduzir equipes, administrar diferentes perfis, desenvolver pessoas e estabelecer uma comunicação estratégica.',
+      modulos: [
+        'Liderança Situacional',
+        'Gestão de Equipes Remotas',
+        'Feedback e Desenvolvimento',
+        'Comunicação Executiva',
+      ],
+    },
+    {
+      id: 'tecnologia',
+      nome: 'Tecnologia',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+      desc: 'Competências digitais fundamentais para aumentar produtividade, segurança e capacidade de análise no dia a dia.',
+      modulos: [
+        'Excel',
+        'Inteligência Artificial no Trabalho',
+        'Power BI Essencial',
+        'Segurança Digital para Equipes',
+        'T.I. Básico',
+      ],
+    },
+    {
+      id: 'rh',
+      nome: 'RH & Cultura',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      desc: 'Gestão de pessoas, integração, diversidade, experiência dos colaboradores e ambientes organizacionais mais saudáveis.',
+      modulos: [
+        'Diversidade e Inclusão',
+        'Onboarding Eficaz',
+        'Employer Branding',
+        'Clima e Engajamento',
+      ],
+    },
+    {
+      id: 'produtividade',
+      nome: 'Produtividade',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+      desc: 'Métodos e ferramentas para organização pessoal e profissional, gestão de prioridades e qualidade nas entregas.',
+      modulos: [
+        'Gestão de Tempo',
+        'Metodologias Ágeis',
+        'OKRs na Prática',
+        'Deep Work e Foco',
+      ],
+    },
+  ]
+
+  const HORAS_POR_MODULO = 2 // estimativa usada só pra render das horas estudadas
+
+  /* ── gera um progresso "realista": algumas trilhas quase no fim,
+     outras no começo, uma ou outra já concluída — em vez de tudo
+     uniformemente aleatório (fica mais parecido com uso real) ── */
+  function gerarProgresso(index) {
+    const perfis = [95, 62, 30, 8, 100] // pontos de partida variados
+    const base = perfis[index % perfis.length]
+    const variacao = Math.floor(Math.random() * 15) - 7 // +-7
+    return Math.max(0, Math.min(100, base + variacao))
+  }
+
+  function renderDashboard() {
+    const grid = document.getElementById('trilhaGrid')
+    if (!grid) return
+
+    let emAndamento = 0
+    let concluidas = 0
+    let certificados = 0
+    let horasTotais = 0
+
+    const html = TRILHAS.map((t, idx) => {
+      const progresso = gerarProgresso(idx)
+      const totalModulos = t.modulos.length
+      const modulosFeitos = Math.min(totalModulos, Math.round((progresso / 100) * totalModulos))
+      const horasTrilha = totalModulos * HORAS_POR_MODULO
+      const horasFeitas = Math.round((progresso / 100) * horasTrilha)
+
+      horasTotais += horasFeitas
+      if (progresso >= 100) { concluidas++; certificados++ }
+      else if (progresso > 0) { emAndamento++ }
+
+      const modulosHtml = t.modulos.map((m, i) => {
+        const done = i < modulosFeitos
+        return `
+          <div class="trilha-module ${done ? 'done' : ''}" style="--i:${i}">
+            <span class="module-num">${done
+              ? '<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+              : (i + 1)}</span>
+            <span>${m}</span>
+          </div>`
+      }).join('')
+
+      return `
+        <div class="trilha-card" style="animation-delay:${idx * 0.06}s" tabindex="0">
+          <div class="trilha-summary">
+            <div class="trilha-icon">${t.icon}</div>
+            <div class="trilha-info">
+              <p class="trilha-name">${t.nome}</p>
+              <p class="trilha-desc">${t.desc}</p>
+              <div class="trilha-progress-bar">
+                <div class="trilha-progress-fill" data-target="${progresso}" style="width:0%"></div>
+              </div>
+              <div class="trilha-progress-label">
+                <span>${modulosFeitos} de ${totalModulos} módulos concluídos</span>
+                <span class="trilha-progress-pct ${progresso >= 100 ? 'is-complete' : ''}">${progresso >= 100 ? 'Concluída ✓' : progresso + '%'}</span>
+              </div>
+            </div>
+            <svg class="trilha-toggle-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="trilha-modules-wrap">
+            <div class="trilha-modules-inner">
+              <div class="trilha-modules">${modulosHtml}</div>
+            </div>
+          </div>
+        </div>
+      `
+    }).join('')
+
+    grid.innerHTML = html
+
+    document.getElementById('statEmAndamento').textContent = emAndamento
+    document.getElementById('statConcluidas').textContent = concluidas
+    document.getElementById('statCertificados').textContent = certificados
+    document.getElementById('statHoras').textContent = horasTotais + 'h'
+
+    // anima as barras de progresso depois de inseridas no DOM
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        grid.querySelectorAll('.trilha-progress-fill').forEach(fill => {
+          fill.style.width = fill.dataset.target + '%'
+        })
+      })
+    })
+  }
+
+  renderDashboard()
+
+  /* ── trilhas em telas de toque: sem hover real, então a abertura
+     acontece no tap (delegado no container, sobrevive a re-renders) ── */
+  const trilhaGrid   = document.getElementById('trilhaGrid')
+  const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+
+  if (!supportsHover) {
+    trilhaGrid.addEventListener('click', (e) => {
+      const summary = e.target.closest('.trilha-summary')
+      if (!summary) return
+      const card = summary.closest('.trilha-card')
+      if (!card) return
+      const wasOpen = card.classList.contains('is-open')
+      trilhaGrid.querySelectorAll('.trilha-card.is-open').forEach(c => c.classList.remove('is-open'))
+      if (!wasOpen) card.classList.add('is-open')
+    })
+  }
+
+  /* ── menu (mesmo mecanismo do index, só que com 1 item) ─────────── */
+  const hamburger    = document.getElementById('hamburger')
+  const menuBackdrop = document.getElementById('menuBackdrop')
+  const menuPanel    = document.getElementById('menuPanel')
+  const menuClose    = document.getElementById('menuClose')
+
+  function openMenu() {
+    clearTimeout(menuPanel._closeTimer)
+    menuPanel.classList.remove('closing')
+    hamburger.classList.add('open')
+    menuBackdrop.classList.add('open')
+    menuPanel.classList.add('open')
+    document.body.style.overflow = 'hidden'
+  }
+  function closeMenu() {
+    hamburger.classList.remove('open')
+    menuBackdrop.classList.remove('open')
+    menuPanel.classList.add('closing')
+    menuPanel.classList.remove('open')
+    document.body.style.overflow = ''
+    clearTimeout(menuPanel._closeTimer)
+    menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 320)
+  }
+
+  hamburger.addEventListener('click', () => menuPanel.classList.contains('open') ? closeMenu() : openMenu())
+  menuBackdrop.addEventListener('click', closeMenu)
+  menuClose.addEventListener('click', closeMenu)
+</script>
+<script src="themeSwitch.js"></script>
+</body>
+</html>
