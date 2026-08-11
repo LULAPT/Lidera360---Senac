@@ -26,6 +26,23 @@
     ::-webkit-scrollbar { width: 0; }
     ::selection { background: rgba(47,213,90,.3); color: var(--ink); }
 
+    /* remove o retângulo/flash azul ao tocar (mobile) e o contorno azul
+       padrão do navegador ao clicar/focar em links, botões etc. */
+    * {
+      -webkit-tap-highlight-color: transparent;
+      tap-highlight-color: transparent;
+    }
+    a, button, input, textarea, select, [tabindex] {
+      outline: none;
+    }
+    /* mantém acessibilidade: quem navega por teclado ainda vê um contorno,
+       só que na cor do projeto em vez do azul padrão */
+    a:focus-visible, button:focus-visible, input:focus-visible,
+    textarea:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--green);
+      outline-offset: 2px;
+    }
+
     /* ── tokens ────────────────────────────────────── */
     :root {
       --navy:   #0f1272;
