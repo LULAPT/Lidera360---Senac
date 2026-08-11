@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="theme-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lidera360 — Desenvolvimento que te leva mais longe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── reset ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color .35s ease, color .35s ease;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: 'Poppins', sans-serif; cursor: pointer; }
+    img { display: block; }
+    ul { list-style: none; }
+    ::-webkit-scrollbar { width: 0; }
+    ::selection { background: rgba(47,213,90,.3); color: var(--ink); }
+
+    /* ── tokens ────────────────────────────────────── */
+    :root {
+      --navy:   #0f1272;
+      --navyd:  #090b52;
+      --green:  #2fd55a;
+      --greend: #22b847;
+      --orange: #f97316;
+      --bg:     #f5f6ff;
+      --white:  #ffffff;
+      --muted:  #6b7280;
+      --border: rgba(15,18,114,.14);
+      /* adaptive text color: navy on light theme, light ink on dark theme */
+      --ink:    var(--navy);
+    }
+
+    /* ── dark theme tokens ───────────────────────────
+       .theme-dark is toggled on <html> by themeSwitch.js.
+       .theme-auto follows the OS preference instead.     */
+    html.theme-dark {
+      --bg:     #12132b;
+      --white:  #1b1c3a;
+      --muted:  #9497c4;
+      --border: rgba(255,255,255,.14);
+      --navyd:  #05061c;
+      --ink:    #eef0ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto {
+        --bg:     #12132b;
+        --white:  #1b1c3a;
+        --muted:  #9497c4;
+        --border: rgba(255,255,255,.14);
+        --navyd:  #05061c;
+        --ink:    #eef0ff;
+      }
+    }
+
+    /* ── keyframes ─────────────────────────────────── */
+    @keyframes modal-in  { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes modal-out { from{opacity:1;transform:scale(1) translateY(0)} to{opacity:0;transform:scale(.94) translateY(12px)} }
+    @keyframes fade-in   { from{opacity:0} to{opacity:1} }
+    @keyframes fade-out  { from{opacity:1} to{opacity:0} }
+
+    /* ── layout helpers ────────────────────────────── */
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 0 2.5rem; }
+    @media(max-width:768px){ .wrap{ padding:0 1.25rem; } }
+
+    .grid-2 { display:grid; gap:3rem; }
+    @media(min-width:769px){ .grid-2{ grid-template-columns:1fr 1fr; align-items:center; gap:5rem; } }
+
+    .hide-mobile { display:none; }
+    @media(min-width:769px){ .hide-mobile{ display:flex; } }
+
+    /* ── decorative circles ─────────────────────────── */
+    .circle {
+      position:absolute;
+      border-radius:50%;
+      pointer-events:none;
+    }
+
+    /* ── buttons ────────────────────────────────────── */
+    .btn-green {
+      display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+      padding:.875rem 2rem;
+      background:var(--green); color:#fff;
+      font-weight:700; font-size:.9rem;
+      border:none; border-radius:50px;
+      box-shadow:0 4px 20px rgba(47,213,90,.35);
+      transition:background .2s;
+      cursor:pointer;
+    }
+    .btn-green:hover { background:var(--greend); }
+    .btn-green.full  { width:100%; }
+
+    .btn-outline {
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:.75rem 1.5rem;
+      background:transparent; color:var(--ink);
+      font-weight:700; font-size:.8rem;
+      border:2px solid var(--navy); border-radius:50px;
+      transition:background .2s, color .2s;
+      cursor:pointer;
+    }
+    .btn-outline:hover { background:var(--navy); color:#fff; }
+    .btn-outline.full { width:100%; }
+
+    /* ── nav ─────────────────────────────────────────── */
+    .nav {
+      position:fixed; top:0; left:0; right:0; z-index:40;
+      background:rgba(255,255,255,.95);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+    }
+    .nav-inner {
+      height:4rem;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .logo { display:flex; align-items:center; gap:.5rem; }
+    .logo-text { font-weight:800; font-size:1.2rem; color:var(--ink); }
+    .logo-text span { color:var(--green); }
+
+    .nav-links { display:flex; align-items:center; gap:2rem; }
+    .nav-links a { font-size:.8rem; font-weight:500; color:var(--muted); transition:color .2s; }
+    .nav-links a:hover { color:var(--ink); }
+
+    .nav-actions { display:flex; align-items:center; gap:.75rem; }
+
+    /* hamburger */
+    .hamburger {
+      display:flex; flex-direction:column; justify-content:center;
+      align-items:center; gap:5px;
+      width:40px; height:40px;
+      border:1.5px solid var(--border); border-radius:10px;
+      background:transparent;
+      transition:background .2s, border-color .2s;
+      flex-shrink:0;
+    }
+    .hamburger span {
+      display:block; width:16px; height:1.5px;
+      background:var(--navy); border-radius:2px;
+      transition:transform .25s, opacity .2s, background .2s;
+    }
+    .hamburger.open { background:var(--bg); border-color:var(--green); }
+    .hamburger.open span { background:var(--green); }
+    .hamburger.open .bar1 { transform:rotate(45deg) translate(4.5px,4.5px); }
+    .hamburger.open .bar2 { opacity:0; }
+    .hamburger.open .bar3 { transform:rotate(-45deg) translate(4.5px,-4.5px); }
+
+    /* ── slide menu ──────────────────────────────────── */
+    .menu-backdrop {
+      position:fixed; inset:0; z-index:45;
+      background:rgba(15, 18, 114, 0.11);
+      backdrop-filter:blur(0px);
+      -webkit-backdrop-filter:blur(0px);
+      opacity:0; pointer-events:none;
+      transition:opacity .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease;
+    }
+    .menu-backdrop.open {
+      opacity:1; pointer-events:auto;
+      backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px);
+    }
+
+    .menu-panel {
+      position:fixed; top:0; right:0; bottom:0; z-index:46;
+      width:min(360px,88vw);
+      background:var(--white);
+      border-left:2px solid var(--green);
+      transform:translateX(100%);
+      opacity:.6;
+      /* abertura: easing "expo-out", com leve respiro no fim */
+      transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, box-shadow .4s ease;
+      display:flex; flex-direction:column;
+      box-shadow:-8px 0 48px rgba(15,18,114,0);
+      overflow:hidden;
+      will-change:transform;
+    }
+    .menu-panel.open {
+      transform:translateX(0);
+      opacity:1;
+      box-shadow:-8px 0 48px rgba(15,18,114,.12);
+    }
+    .menu-panel.closing {
+      /* fechamento: easing "expo-in", mais rápido e direto */
+      transition:transform .3s cubic-bezier(.7,0,.84,0), opacity .3s ease, box-shadow .3s ease;
+    }
+
+    /* entrada escalonada dos links ao abrir */
+    @keyframes menuLinkIn {
+      from { opacity:0; transform:translateX(18px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    .menu-nav a { opacity:0; }
+    .menu-panel.open .menu-nav a {
+      animation:menuLinkIn .5s cubic-bezier(.16,1,.3,1) both;
+    }
+    .menu-panel.open .menu-nav a:nth-child(1) { animation-delay:.10s; }
+    .menu-panel.open .menu-nav a:nth-child(2) { animation-delay:.15s; }
+    .menu-panel.open .menu-nav a:nth-child(3) { animation-delay:.20s; }
+    .menu-panel.open .menu-nav a:nth-child(4) { animation-delay:.25s; }
+    .menu-panel.open .menu-nav a:nth-child(5) { animation-delay:.30s; }
+    .menu-panel.closing .menu-nav a { animation:none; opacity:0; transition:opacity .15s ease; }
+
+    .menu-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1.25rem 1.5rem;
+      border-bottom:1px solid var(--border);
+      position:relative; z-index:1;
+    }
+    .menu-header img { height:40px; object-fit:contain; }
+
+    .menu-close {
+      width:36px; height:36px; border-radius:50%;
+      border:1.5px solid var(--border); background:transparent;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--ink); transition:border-color .2s;
+    }
+    .menu-close:hover { border-color:var(--ink); }
+
+    .menu-nav { flex:1; display:flex; flex-direction:column; padding:1.5rem; gap:.25rem; position:relative; z-index:1; }
+    .menu-nav a {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.875rem 1rem; border-radius:12px;
+      transition:background .15s;
+    }
+    .menu-nav a:hover { background:var(--bg); }
+    .menu-nav .link-title { font-weight:700; font-size:1rem; color:var(--ink); }
+    .menu-nav .link-sub   { font-size:.72rem; color:var(--muted); margin-top:2px; }
+    .menu-nav .arrow      { color:var(--green); flex-shrink:0; transition:transform .2s; }
+    .menu-nav a:hover .arrow { transform:translateX(4px); }
+
+    .menu-footer {
+      padding:1.5rem;
+      border-top:1px solid var(--border);
+      display:flex; flex-direction:column; gap:.75rem;
+      position:relative; z-index:1;
+    }
+    .menu-note { font-size:.7rem; text-align:center; color:var(--muted); }
+
+    /* ── login modal ─────────────────────────────────── */
+    .modal-wrap {
+      position:fixed; inset:0; z-index:50;
+      display:flex; align-items:center; justify-content:center;
+      padding:1rem;
+      /* background:rgba(15,18,114,.5); */
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+    }
+    .modal-wrap.entering { animation:fade-in .25s ease; }
+    .modal-wrap.leaving  { animation:fade-out .25s ease forwards; }
+
+    .modal-box {
+      width:100%; max-width:22rem;
+      background:var(--white); border-radius:24px;
+      padding:2.5rem 2rem;
+      position:relative;
+      box-shadow:0 24px 64px rgba(15,18,114,.2);
+      overflow:hidden;
+      border: 2px solid rgba(250, 248, 248, 0.384)
+    }
+    .modal-box.entering { animation:modal-in  .3s  cubic-bezier(.34,1.56,.64,1) both; }
+    .modal-box.leaving  { animation:modal-out .22s cubic-bezier(.4,0,1,1)       forwards; }
+
+    .modal-close {
+      position:absolute; top:1rem; right:1.25rem;
+      font-size:1.2rem; line-height:1;
+      color:#9ca3af; background:none; border:none;
+      transition:color .2s;
+    }
+    .modal-close:hover { color:var(--ink); }
+
+    .modal-logo { display:flex; justify-content:center; margin-bottom:1.5rem; }
+    .modal-logo img { height:56px; object-fit:contain; }
+
+    .modal-title { font-size:1.6rem; font-weight:700; margin-bottom:1.5rem; }
+
+    /* input field */
+    .input-wrap {
+      display:flex; align-items:center; gap:.75rem;
+      border:1.5px solid var(--border); border-radius:50px;
+      padding:.75rem 1.25rem;
+      background:var(--white);
+      transition:border-color .2s;
+    }
+    .input-wrap:focus-within { border-color:var(--ink); }
+    .input-wrap svg { color:#9ca3af; flex-shrink:0; transition:color .2s; }
+    .input-wrap:focus-within svg { color:var(--ink); }
+    .input-wrap input {
+      flex:1; border:none; outline:none; background:transparent;
+      font-family:'Poppins',sans-serif; font-size:.875rem; color:var(--ink);
+    }
+    .input-wrap input::placeholder { color:#9ca3af; }
+    .eye-btn {
+      background:none; border:none; color:#9ca3af;
+      display:flex; align-items:center; cursor:pointer;
+      flex-shrink:0; padding:0; transition:color .2s;
+    }
+    .eye-btn:hover { color:var(--ink); }
+
+    .forgot { text-align:right; }
+    .forgot a { font-size:.8rem; font-weight:600; color:var(--ink); }
+
+    .divider { text-align:center; font-size:.8rem; color:var(--muted); margin:.25rem 0; }
+
+    .social-row { display:flex; justify-content:center; gap:.75rem; }
+    .social-btn {
+      width:44px; height:44px; border-radius:50%;
+      border:1.5px solid var(--border); background:var(--white);
+      font-weight:700; font-size:.85rem;
+      display:flex; align-items:center; justify-content:center;
+      transition:border-color .2s;
+    }
+    .social-btn:hover { border-color:var(--ink); }
+
+    .modal-footer { text-align:center; font-size:.8rem; color:var(--muted); margin-top:1.25rem; }
+    .modal-footer a { color:var(--ink); font-weight:700; }
+
+    /* ── hero ────────────────────────────────────────── */
+    .hero {
+      position:relative; overflow:hidden;
+      padding:7rem 0 5rem;
+    }
+    @media(min-width:769px){ .hero{ padding:9rem 0 6rem; } }
+
+    .hero-badge {
+      display:inline-flex; align-items:center; gap:.5rem;
+      background:rgba(47,213,90,.12); border-radius:50px;
+      padding:.35rem 1rem; margin-bottom:1.5rem;
+      font-size:.75rem; font-weight:600; color:var(--ink);
+    }
+    .badge-dot { width:8px; height:8px; border-radius:50%; background:var(--green); display:inline-block; }
+
+    .hero-title {
+      font-size:clamp(2.4rem,6vw,4.5rem);
+      font-weight:800; line-height:1.05;
+      letter-spacing:-.02em; margin-bottom:1.25rem;
+    }
+    .hero-title .accent { color:var(--green); }
+
+    .hero-body {
+      font-size:1rem; line-height:1.7;
+      color:var(--muted); max-width:28rem;
+      margin-bottom:2rem;
+    }
+
+    .hero-ctas { display:flex; flex-wrap:wrap; align-items:center; gap:1rem; }
+
+    .demo-btn {
+      display:flex; align-items:center; gap:.5rem;
+      font-size:.875rem; font-weight:600; color:var(--ink);
+      background:none; border:none; transition:opacity .2s;
+    }
+    .demo-btn:hover { opacity:.7; }
+    .demo-circle {
+      width:36px; height:36px; border-radius:50%;
+      background:rgba(15,18,114,.08);
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    /* hero image card */
+    .hero-card {
+      position:relative;
+    }
+    .hero-img-wrap {
+      border-radius:24px; overflow:hidden;
+      box-shadow:0 24px 60px rgba(15,18,114,.15);
+      border:2px solid var(--border);
+    }
+    .hero-img { width:100%; height:340px; object-fit:cover; display:block; }
+
+    .hero-pill {
+      position:absolute;
+      background:var(--white); border-radius:16px;
+      box-shadow:0 8px 32px rgba(15,18,114,.15);
+      border:1px solid var(--border);
+    }
+    .hero-pill-1 { bottom:-20px; left:24px; padding:.875rem 1.25rem; }
+    .hero-pill-2 { top:-16px;    right:24px; padding:.75rem 1.125rem; background:var(--navy); border-color:transparent; }
+
+    .pill-val  { font-size:1.8rem; font-weight:800; color:var(--green); line-height:1; }
+    .pill-val2 { font-size:1.4rem; font-weight:800; color:#fff; line-height:1; }
+    .pill-lbl  { font-size:.7rem; color:var(--muted); margin-top:2px; }
+    .pill-lbl2 { font-size:.65rem; color:rgba(255,255,255,.6); margin-bottom:2px; }
+
+    /* stats bar */
+    .stats-bar {
+      display:grid; grid-template-columns:1fr 1fr;
+      border:2px solid var(--border);
+      border-radius:16px; overflow:hidden;
+      margin-top:4rem;
+      gap:1px; background:var(--border);
+    }
+    @media(min-width:769px){ .stats-bar{ grid-template-columns:repeat(4,1fr); } }
+    .stat-cell { background:var(--white); padding:1.25rem 1.5rem; }
+    .stat-val  { font-size:clamp(1.4rem,3vw,2rem); font-weight:800; color:var(--green); line-height:1; }
+    .stat-lbl  { font-size:.72rem; color:var(--muted); margin-top:4px; }
+
+    /* ── courses ─────────────────────────────────────── */
+    .courses-section { background:var(--white); padding:5rem 0; position:relative; overflow:hidden; }
+
+    .section-eyebrow { font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:.5rem; }
+
+    .section-title {
+      font-size:clamp(1.6rem,3.5vw,2.4rem);
+      font-weight:800; line-height:1.15;
+    }
+    .section-title .accent { color:var(--green); }
+
+    .section-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-end; gap:1rem; margin-bottom:2rem; }
+
+    .more-link { font-size:.8rem; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:4px; transition:opacity .2s; align-self:flex-end; }
+    .more-link:hover { opacity:.7; }
+
+    /* tabs */
+    .tabs { display:flex; gap:.5rem; overflow-x:auto; margin-bottom:1.5rem; padding-bottom:2px; scrollbar-width:none; flex-wrap:wrap; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tab-btn {
+      padding:.55rem 1.2rem;
+      font-size:.78rem; font-weight:600;
+      border:2px solid var(--border); border-radius:50px;
+      background:transparent; color:var(--muted);
+      transition:all .2s; white-space:nowrap;
+    }
+    .tab-btn.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+
+    /* course cards */
+    .courses-grid { display:grid; gap:1rem; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
+
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    .course-card {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:16px; overflow:hidden;
+      transition:box-shadow .2s, transform .2s;
+      cursor:pointer;
+    }
+    .course-card:hover { box-shadow:0 8px 32px rgba(15,18,114,.12); transform:translateY(-3px); }
+
+    .course-thumb { position:relative; height:140px; background:var(--bg); overflow:hidden; }
+    .course-thumb img { width:100%; height:100%; object-fit:cover; transition:transform .5s; }
+    .course-card:hover .course-thumb img { transform:scale(1.05); }
+
+    .course-tag {
+      position:absolute; top:10px; left:10px;
+      background:var(--green); color:#fff;
+      font-size:.62rem; font-weight:700;
+      padding:.2rem .6rem; border-radius:50px;
+    }
+    .course-body { padding:.875rem 1rem; }
+    .course-title { font-weight:600; font-size:.875rem; margin-bottom:.5rem; line-height:1.4; }
+    .course-meta { display:flex; align-items:center; justify-content:space-between; }
+    .course-dur  { font-size:.72rem; color:var(--muted); }
+    .course-level {
+      font-size:.62rem; font-weight:600;
+      border:1.5px solid; border-radius:50px;
+      padding:.1rem .5rem;
+    }
+
+    /* ── features ────────────────────────────────────── */
+    .features-section { background:var(--bg); padding:5rem 0; position:relative; overflow:hidden; }
+
+    .section-center { text-align:center; margin-bottom:3rem; }
+
+    .features-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); }
+    .feature-card {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:20px; padding:1.75rem;
+      transition:box-shadow .2s, transform .2s;
+    }
+    .feature-card:hover { box-shadow:0 8px 32px rgba(15,18,114,.1); transform:translateY(-3px); }
+
+    .feature-icon {
+      width:48px; height:48px; border-radius:14px;
+      background:rgba(47,213,90,.12);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.4rem; margin-bottom:1rem;
+    }
+    .feature-title { font-weight:700; font-size:.95rem; margin-bottom:.5rem; }
+    .feature-body  { font-size:.83rem; line-height:1.65; color:var(--muted); }
+
+    /* ── about (sobre nós) ──────────────────────────── */
+    .about-section { background:var(--white); padding:5rem 0; position:relative; overflow:hidden; }
+
+    .about-grid { display:grid; gap:3rem; align-items:center; }
+    @media(min-width:769px){ .about-grid{ grid-template-columns:1fr 1fr; gap:4rem; } }
+
+    .about-body { font-size:.95rem; line-height:1.75; color:var(--muted); margin-bottom:1.5rem; }
+
+    .about-list { display:flex; flex-direction:column; gap:.875rem; margin-bottom:2rem; }
+    .about-list li {
+      display:flex; align-items:flex-start; gap:.75rem;
+      font-size:.85rem; line-height:1.6; color:var(--ink);
+    }
+    .about-list .check-icon { margin-top:2px; }
+
+    .about-video-frame {
+      position:relative;
+      isolation:isolate;
+    }
+
+    /* camadas de "aura" atrás do vídeo — como um box-shadow de várias
+       cores, com blur pesado, que flutua sozinho e acompanha o mouse
+       (o movimento é controlado via JS, veja o script no fim do body) */
+    .about-video-frame .aura-blob {
+      position:absolute;
+      border-radius:50%;
+      filter:blur(70px);
+      z-index:-1;
+      pointer-events:none;
+      will-change:transform;
+    }
+    .about-video-frame .aura-blob-1 {
+      width:65%; height:65%;
+      top:-12%; left:-10%;
+      background:radial-gradient(circle at 30% 30%, var(--green), transparent 70%);
+      opacity:.55;
+    }
+    .about-video-frame .aura-blob-2 {
+      width:60%; height:60%;
+      bottom:-14%; right:-8%;
+      background:radial-gradient(circle at 70% 70%, var(--navy), transparent 70%);
+      opacity:.55;
+    }
+    .about-video-frame .aura-blob-3 {
+      width:45%; height:45%;
+      top:27%; left:27%;
+      background:radial-gradient(circle, var(--orange), transparent 70%);
+      opacity:.35;
+    }
+
+    /* camada de vidro fosco que suaviza a aura por trás do vídeo */
+    .about-video-frame .aura-glass {
+      position:absolute;
+      inset:-24px;
+      z-index:-1;
+      border-radius:32px;
+      backdrop-filter:blur(28px);
+      -webkit-backdrop-filter:blur(28px);
+      pointer-events:none;
+    }
+
+    .about-video-wrap {
+      position:relative; width:100%;
+      aspect-ratio:16/9;
+      border-radius:24px; overflow:hidden;
+      box-shadow:0 24px 60px rgba(15,18,114,.15);
+      border:2px solid var(--border);
+      background:var(--navyd);
+    }
+    .about-video-wrap iframe {
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      border:none; display:block;
+    }
+
+    /* ── testimonials ────────────────────────────────── */
+    .testimonials-section { background:var(--white); padding:5rem 0; }
+    .testimonials-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); margin-top:2.5rem; }
+
+    .testimonial-card { background:var(--bg); border:1.5px solid var(--border); border-radius:20px; padding:1.75rem; }
+    .stars { display:flex; gap:.1rem; margin-bottom:1rem; font-size:1rem; color:var(--orange); }
+    .testimonial-quote { font-size:.9rem; line-height:1.65; color:#374151; font-style:italic; margin-bottom:1.25rem; }
+    .testimonial-author { display:flex; align-items:center; gap:.75rem; }
+    .testimonial-author img { width:42px; height:42px; border-radius:50%; object-fit:cover; border:2px solid var(--green); }
+    .author-name { font-weight:700; font-size:.85rem; }
+    .author-role { font-size:.72rem; color:var(--muted); }
+
+    /* ── pricing ─────────────────────────────────────── */
+    .pricing-section { background:var(--bg); padding:5rem 0; position:relative; overflow:hidden; }
+    .plans-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
+
+    .plan-card {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:24px; padding:2rem;
+      display:flex; flex-direction:column;
+      position:relative; overflow:hidden;
+    }
+    .plan-card.highlight {
+      background:var(--navy);
+      border-color:var(--green);
+      box-shadow:0 16px 48px rgba(15,18,114,.25);
+    }
+    .plan-badge {
+      position:absolute; top:1rem; right:1rem;
+      background:var(--green); color:#fff;
+      font-size:.65rem; font-weight:700;
+      padding:.2rem .75rem; border-radius:50px;
+    }
+    .plan-name { font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:.25rem; }
+    .plan-card.highlight .plan-name { color:rgba(255,255,255,.6); }
+    .plan-card:not(.highlight) .plan-name { color:var(--muted); }
+
+    .plan-desc { font-size:.83rem; margin-bottom:1.25rem; }
+    .plan-card.highlight .plan-desc { color:rgba(255,255,255,.7); }
+    .plan-card:not(.highlight) .plan-desc { color:var(--muted); }
+
+    .plan-price-row { display:flex; align-items:flex-end; gap:4px; margin-bottom:1.5rem; }
+    .plan-price { font-size:2.2rem; font-weight:800; line-height:1; }
+    .plan-card.highlight .plan-price { color:#fff; }
+    .plan-per { font-size:.72rem; margin-bottom:4px; }
+    .plan-card.highlight .plan-per { color:rgba(255,255,255,.5); }
+    .plan-card:not(.highlight) .plan-per { color:var(--muted); }
+
+    .plan-features { display:flex; flex-direction:column; gap:.625rem; flex:1; margin-bottom:1.75rem; }
+    .plan-features li { display:flex; align-items:center; gap:.5rem; font-size:.83rem; }
+    .plan-card.highlight .plan-features li { color:rgba(255,255,255,.85); }
+    .plan-card:not(.highlight) .plan-features li { color:#374151; }
+
+    .check-icon { flex-shrink:0; }
+
+    /* ── cta banner ──────────────────────────────────── */
+    .cta-section {
+      background:var(--navy);
+      padding:5rem 0;
+      position:relative; overflow:hidden;
+    }
+    .cta-inner {
+      display:flex; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      gap:2.5rem;
+      position:relative; z-index:1;
+    }
+    .cta-eyebrow { font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:.75rem; }
+    .cta-title { font-size:clamp(1.8rem,4vw,3.2rem); font-weight:800; color:#fff; line-height:1.1; }
+    .cta-title .accent { color:var(--green); }
+    .cta-actions { display:flex; flex-direction:column; gap:.75rem; align-items:flex-start; }
+    .cta-note { font-size:.72rem; color:rgba(255,255,255,.35); text-align:center; width:100%; }
+
+    /* ── footer ──────────────────────────────────────── */
+    footer { background:var(--navyd); color:rgba(255,255,255,.7); padding:3rem 0 2rem; }
+    .footer-grid { display:grid; gap:2.5rem; margin-bottom:2.5rem; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+    .footer-brand .logo-text { font-size:1.1rem; margin-bottom:.75rem; display:block; }
+    .footer-tagline { font-size:.78rem; line-height:1.65; color:rgba(255,255,255,.4); }
+    .footer-col-title { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--green); margin-bottom:1rem; }
+    .footer-links { display:flex; flex-direction:column; gap:.5rem; }
+    .footer-links a { font-size:.78rem; color:rgba(255,255,255,.35); transition:color .2s; }
+    .footer-links a:hover { color:#fff; }
+    .footer-bottom { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.75rem; border-top:1px solid rgba(255,255,255,.08); padding-top:1.5rem; }
+    .footer-copy { font-size:.72rem; color:rgba(255,255,255,.25); }
+    .footer-copy-ijcpm { display:flex; align-items:center; gap:.5rem; }
+    .footer-copy-ijcpm img { height:20px; width:auto; object-fit:contain; opacity:.7; }
+
+    /* ── logo svg ────────────────────────────────────── */
+    .logo-mark { flex-shrink:0; }
+
+        /* ── @medias ────────────────────────────────────── */
+    @media (max-width: 700px) {
+  .nav-links,
+  #navLoginBtn,
+  .nav-actions .btn-green {
+    display: none !important;
+  }
+
+  .hamburger {
+    display: flex !important;
+  }
+}
+
+    /* ── dark theme: fixes for hardcoded (non-var) colors ──── */
+    html.theme-dark .nav { background: rgba(18,19,43,.85); }
+
+    html.theme-dark .testimonial-quote,
+    html.theme-dark .plan-card:not(.highlight) .plan-features li { color: #c7c9e8; }
+
+    /* logo mark + wordmark svgs use hardcoded fills — relink them to the ink token */
+    html.theme-dark svg [fill="#0f1272"] { fill: var(--ink); }
+    html.theme-dark svg [fill="#090b52"] { fill: #4b4f8f; }
+
+    /* the "X" social button uses inline style="color:#000" — invisible on a dark card */
+    html.theme-dark .social-btn[style*="#000"] { color: #fff !important; }
+
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .nav { background: rgba(18,19,43,.85); }
+      html.theme-auto .testimonial-quote,
+      html.theme-auto .plan-card:not(.highlight) .plan-features li { color: #c7c9e8; }
+      html.theme-auto svg [fill="#0f1272"] { fill: var(--ink); }
+      html.theme-auto svg [fill="#090b52"] { fill: #4b4f8f; }
+      html.theme-auto .social-btn[style*="#000"] { color: #fff !important; }
+    }
+
+    /* smooth cross-fade on theme switch for surfaces without their own transition */
+    .nav, footer, .modal-box, .menu-panel, .stat-cell,
+    .courses-section, .features-section, .testimonials-section, .pricing-section {
+      transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+    }
+
+    /* ── floating theme-toggle button (injected by themeSwitch.js) ──
+       reposition it away from the fixed nav / hamburger and keep it
+       below the slide-menu and login modal so it doesn't float on top */
+    .theme-toggle {
+      top: auto !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      z-index: 41 !important;
+    }
+    @media (max-width: 480px) {
+      .theme-toggle { width: 48px !important; height: 48px !important; bottom: 16px !important; right: 16px !important; }
+      .theme-toggle .sun-icon, .theme-toggle .moon-icon { width: 24px !important; height: 24px !important; }
+    }
+
+    html.theme-dark .hamburger span {
+  background: var(--ink); /* ou qualquer cor fixa, ex: #eef0ff */
+}
+
+html.theme-dark .hamburger {
+  border-color: var(--border); /* opcional, ajusta o contorno também */
+}
+
+/* se quiser que o modo "auto" (segue o sistema) também mude */
+@media (prefers-color-scheme: dark) {
+  html.theme-auto .hamburger span { background: var(--ink); }
+  html.theme-auto .hamburger { border-color: var(--border); }
+}
+  </style>
+</head>
+<body>
+
+<!-- ── Slide menu backdrop ────────────────────────── -->
+<div class="menu-backdrop" id="menuBackdrop"></div>
+
+<!-- ── Slide menu panel ───────────────────────────── -->
+<div class="menu-panel" id="menuPanel">
+  <!-- decorative circles inside panel -->
+  <div class="circle" style="width:200px;height:200px;background:rgba(47,213,90,.07);top:-60px;right:-60px;"></div>
+  <div class="circle" style="width:120px;height:120px;background:rgba(249,115,22,.07);bottom:40px;left:-40px;"></div>
+
+  <div class="menu-header">
+    <div class="logo">
+      <svg class="logo-mark" width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,4 44,40 4,40" fill="#0f1272"/>
+        <polygon points="14,40 24,22 34,40" fill="#090b52" opacity=".7"/>
+        <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
+      </svg>
+      <span class="logo-text">Lidera<span>360</span></span>
+    </div>
+    <button class="menu-close" id="menuClose" aria-label="Fechar">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="menu-nav">
+    <a href="#cursos">
+      <div><p class="link-title">Cursos</p><p class="link-sub">400+ cursos disponíveis</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#planos">
+      <div><p class="link-title">Planos</p><p class="link-sub">Starter, Business, Enterprise</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#">
+      <div><p class="link-title">Para Empresas</p><p class="link-sub">Soluções corporativas</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#">
+      <div><p class="link-title">Blog</p><p class="link-sub">Artigos sobre liderança e T&D</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#sobre">
+      <div><p class="link-title">Sobre nós</p><p class="link-sub">Conheça o Lidera360</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </nav>
+
+  <div class="menu-footer">
+    <button class="btn-outline full" id="menuLoginBtn">Entrar na plataforma</button>
+    <button class="btn-green full" onclick="closeMenu()">Começar Grátis — 14 dias</button>
+    <p class="menu-note">Sem cartão de crédito</p>
+  </div>
+</div>
+
+<!-- ── Login modal ────────────────────────────────── -->
+<div class="modal-wrap" id="loginModal" style="display:none">
+  <div class="modal-box" id="loginBox">
+    <!-- decorative circles -->
+    <div class="circle" style="width:60px;height:60px;background:rgba(47,213,90,.12);top:-20px;right:-20px;"></div>
+    <div class="circle" style="width:30px;height:30px;background:rgba(249,115,22,.18);bottom:30px;left:-10px;"></div>
+
+    <button class="modal-close" id="loginClose" aria-label="Fechar">✕</button>
+
+    <div class="modal-logo">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <polygon points="32,4 56,52 8,52" fill="#0f1272"/>
+        <polygon points="16,52 32,28 48,52" fill="#090b52" opacity=".7"/>
+        <polyline points="10,46 24,26 36,36 54,14" stroke="#2fd55a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="54" cy="14" r="4" fill="#2fd55a"/>
+      </svg>
+    </div>
+
+    <h2 class="modal-title">Login</h2>
+
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="input-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input type="email" placeholder="Email ou username." id="loginEmail" />
+      </div>
+      <div class="input-wrap" style="position:relative;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <input type="password" placeholder="Senha" id="loginPassword" />
+        <button class="eye-btn" id="eyeBtn" type="button" aria-label="Mostrar senha">
+          <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="forgot"><a href="#">Esqueceu sua senha?</a></div>
+      <button class="btn-green full" onclick="closeLogin()">Login</button>
+      <p class="divider">Ou registre-se com</p>
+      <div class="social-row">
+        <button class="social-btn" style="color:#ea4335">G</button>
+        <button class="social-btn" style="color:#1877f2">f</button>
+        <button class="social-btn" style="color:#000">X</button>
+        <button class="social-btn" style="color:#0a66c2">in</button>
+      </div>
+      <p class="modal-footer">Não tem uma conta? <a href="#">Registre-se</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Nav ────────────────────────────────────────── -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="#" class="logo">
+      <svg class="logo-mark" width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,4 44,40 4,40" fill="#0f1272"/>
+        <polygon points="14,40 24,22 34,40" fill="#090b52" opacity=".7"/>
+        <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
+      </svg>
+      <span class="logo-text">Lidera<span>360</span></span>
+    </a>
+
+    <nav class="nav-links hide-mobile">
+      <a href="#cursos">Cursos</a>
+      <a href="#planos">Planos</a>
+      <a href="#">Para Empresas</a>
+      <a href="#">Blog</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="btn-outline hide-mobile" id="navLoginBtn">Entrar</button>
+      <a href="#" class="btn-green hide-mobile" style="font-size:.8rem;padding:.5rem 1.25rem;">Começar Grátis</a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span class="bar1"></span>
+        <span class="bar2"></span>
+        <span class="bar3"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ── Hero ───────────────────────────────────────── -->
+<section class="hero">
+  <!-- bg decoration -->
+  <div class="circle" style="width:500px;height:500px;background:rgba(15,18,114,.04);top:-100px;right:-150px;"></div>
+  <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.08);bottom:-50px;left:-80px;"></div>
+  <div class="circle" style="width:16px;height:16px;background:#0f1272;top:120px;left:12%;"></div>
+  <div class="circle" style="width:10px;height:10px;background:#f97316;top:200px;right:18%;"></div>
+  <div class="circle" style="width:22px;height:22px;background:#2fd55a;bottom:80px;right:8%;"></div>
+
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="grid-2">
+      <!-- left -->
+      <div>
+        <div class="hero-badge"><span class="badge-dot"></span>Plataforma de T&D Corporativo</div>
+        <h1 class="hero-title">Treine equipes.<br>Forme <span class="accent">líderes.</span></h1>
+        <p class="hero-body">Mais de 400 cursos em áreas estratégicas, trilhas personalizadas por cargo e relatórios completos para gestores.</p>
+        <div class="hero-ctas">
+          <button class="btn-green" onclick="window.location='#'">
+            Testar 14 dias grátis
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="demo-btn">
+            <div class="demo-circle">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="3,2 10,6 3,10" fill="#0f1272"/></svg>
+            </div>
+            Ver demonstração
+          </button>
+        </div>
+      </div>
+      <!-- right -->
+      <div class="hero-card" style="margin-top:2rem;">
+        <div class="hero-img-wrap">
+          <img class="hero-img" src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=520&fit=crop&auto=format" alt="Equipe em treinamento" loading="lazy"/>
+        </div>
+        <div class="hero-pill hero-pill-1">
+          <p class="pill-val">94%</p>
+          <p class="pill-lbl">taxa de conclusão média</p>
+        </div>
+        <div class="hero-pill hero-pill-2">
+          <p class="pill-lbl2">Novos cursos este mês</p>
+          <p class="pill-val2">+18</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- stats -->
+    <div class="stats-bar">
+      <div class="stat-cell"><p class="stat-val">400+</p><p class="stat-lbl">Cursos disponíveis</p></div>
+      <div class="stat-cell"><p class="stat-val">3.200+</p><p class="stat-lbl">Empresas clientes</p></div>
+      <div class="stat-cell"><p class="stat-val">120 mil</p><p class="stat-lbl">Colaboradores ativos</p></div>
+      <div class="stat-cell"><p class="stat-val">4,8★</p><p class="stat-lbl">Avaliação média</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Courses ────────────────────────────────────── -->
+<section class="courses-section" id="cursos">
+  <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.05);top:-80px;right:-80px;"></div>
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="section-head">
+      <div>
+        <p class="section-eyebrow">Catálogo</p>
+        <h2 class="section-title">Cursos para cada<br><span class="accent">necessidade do negócio</span></h2>
+      </div>
+      <a href="#" class="more-link">Ver catálogo completo <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+
+    <div class="tabs" id="courseTabs">
+      <button class="tab-btn active" data-tab="lideranca">Liderança</button>
+      <button class="tab-btn" data-tab="vendas">Vendas</button>
+      <button class="tab-btn" data-tab="compliance">Compliance</button>
+      <button class="tab-btn" data-tab="produtividade">Produtividade</button>
+      <button class="tab-btn" data-tab="rh">RH &amp; Cultura</button>
+      <button class="tab-btn" data-tab="tecnologia">Tecnologia</button>
+    </div>
+
+    <div id="tab-lideranca" class="tab-panel active"><div class="courses-grid" id="grid-lideranca"></div></div>
+    <div id="tab-vendas"    class="tab-panel"><div class="courses-grid" id="grid-vendas"></div></div>
+    <div id="tab-compliance" class="tab-panel"><div class="courses-grid" id="grid-compliance"></div></div>
+    <div id="tab-produtividade" class="tab-panel"><div class="courses-grid" id="grid-produtividade"></div></div>
+    <div id="tab-rh"        class="tab-panel"><div class="courses-grid" id="grid-rh"></div></div>
+    <div id="tab-tecnologia" class="tab-panel"><div class="courses-grid" id="grid-tecnologia"></div></div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────── -->
+<section class="features-section">
+  <div class="circle" style="width:250px;height:250px;background:rgba(15,18,114,.04);bottom:-60px;left:-60px;"></div>
+  <div class="circle" style="width:14px;height:14px;background:#f97316;top:60px;right:15%;"></div>
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="section-center">
+      <p class="section-eyebrow">Plataforma</p>
+      <h2 class="section-title">Tudo que o RH precisa <span class="accent">em um só lugar</span></h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">🎯</div><p class="feature-title">Trilhas Personalizadas</p><p class="feature-body">Monte jornadas de aprendizagem por cargo, departamento ou meta estratégica — sem customização técnica.</p></div>
+      <div class="feature-card"><div class="feature-icon">📊</div><p class="feature-title">Dashboard em Tempo Real</p><p class="feature-body">Acompanhe progresso e engajamento por equipe. Relatórios exportáveis para o RH e gestores.</p></div>
+      <div class="feature-card"><div class="feature-icon">👥</div><p class="feature-title">Multiusuário por Empresa</p><p class="feature-body">Cada colaborador tem perfil, histórico e certificado próprios. Gestores têm visão consolidada do time.</p></div>
+      <div class="feature-card"><div class="feature-icon">🏆</div><p class="feature-title">Certificação Automática</p><p class="feature-body">Certificados digitais gerados ao concluir trilhas. Válidos para comprovação interna e externa.</p></div>
+      <div class="feature-card"><div class="feature-icon">📱</div><p class="feature-title">Mobile-First</p><p class="feature-body">Funciona em qualquer dispositivo. O colaborador aprende no ritmo dele — celular, tablet ou desktop.</p></div>
+      <div class="feature-card"><div class="feature-icon">🛡️</div><p class="feature-title">Conformidade Garantida</p><p class="feature-body">Trilhas de compliance com rastreabilidade total. Histórico de aceites acessível por auditoria.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Sobre nós ──────────────────────────────────── -->
+<section class="about-section" id="sobre">
+  <div class="circle" style="width:280px;height:280px;background:rgba(47,213,90,.05);bottom:-80px;right:-80px;"></div>
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="about-grid">
+      <!-- left: texto -->
+      <div>
+        <p class="section-eyebrow">Sobre nós</p>
+        <h2 class="section-title" style="margin-bottom:1.25rem;">Quem somos e o que <span class="accent">propomos</span></h2>
+        <p class="about-body">
+          O Lidera360 nasceu da constatação de que a maioria das plataformas de treinamento corporativo
+          fala apenas com líderes e gestores — deixando o restante da equipe sem oportunidades reais de
+          desenvolvimento. Nossa proposta é diferente: acreditamos que uma empresa forte se constrói
+          capacitando todos os seus colaboradores, do operacional à liderança.
+        </p>
+        <p class="about-body">
+          Por isso, criamos uma plataforma que une trilhas personalizadas, acompanhamento contínuo e
+          conteúdos práticos, ajudando cada funcionário a crescer no seu próprio ritmo e, ao mesmo tempo,
+          gerando dados claros para o RH acompanhar essa evolução.
+        </p>
+        <ul class="about-list">
+          <li>
+            <svg class="check-icon" width="18" height="18" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Desenvolvimento acessível a todos os níveis da empresa, não só à liderança
+          </li>
+          <li>
+            <svg class="check-icon" width="18" height="18" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Trilhas pensadas para formar novos líderes de dentro da própria equipe
+          </li>
+          <li>
+            <svg class="check-icon" width="18" height="18" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Relatórios e acompanhamento contínuo para gestores tomarem melhores decisões
+          </li>
+        </ul>
+        <a href="#" class="btn-green">Conheça nossa proposta</a>
+      </div>
+      <!-- right: vídeo -->
+      <div class="about-video-frame" id="aboutVideoFrame">
+        <div class="aura-glass"></div>
+        <div class="aura-blob aura-blob-1" data-depth="1"></div>
+        <div class="aura-blob aura-blob-2" data-depth="-0.8"></div>
+        <div class="aura-blob aura-blob-3" data-depth="1.4"></div>
+        <div class="about-video-wrap">
+          <iframe
+            src="https://www.youtube.com/embed/PtyDLvDLX1k"
+            title="Vídeo institucional Lidera360"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA Banner ──────────────────────────────────── -->
+<section class="cta-section">
+  <div class="circle" style="width:400px;height:400px;background:rgba(47,213,90,.08);top:-120px;right:-120px;"></div>
+  <div class="circle" style="width:200px;height:200px;background:rgba(249,115,22,.08);bottom:-60px;left:-60px;"></div>
+  <div class="circle" style="width:12px;height:12px;background:#f97316;top:30%;left:8%;"></div>
+  <div class="circle" style="width:18px;height:18px;background:#2fd55a;bottom:25%;right:12%;"></div>
+  <div class="wrap">
+    <div class="cta-inner">
+      <div>
+        <p class="cta-eyebrow">Pronto para começar?</p>
+        <h2 class="cta-title">Sua equipe merece o melhor.<br><span class="accent">Comece hoje.</span></h2>
+      </div>
+      <div class="cta-actions">
+        <button class="btn-green">Testar 14 dias grátis</button>
+        <p class="cta-note">Sem cartão de crédito · Cancele quando quiser</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────── -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo-text" style="display:flex;align-items:center;gap:.4rem;margin-bottom:.75rem;">
+          <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
+            <polygon points="24,4 44,40 4,40" fill="#0f1272"/>
+            <polygon points="14,40 24,22 34,40" fill="#090b52" opacity=".7"/>
+            <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
+          </svg>
+          Lidera<span>360</span>
+        </span>
+        <p class="footer-tagline">Desenvolvimento que te leva mais longe.</p>
+      </div>
+      <div>
+        <p class="footer-col-title">Produto</p>
+        <ul class="footer-links">
+          <li><a href="#">Cursos</a></li><li><a href="#">Trilhas</a></li>
+          <li><a href="#">Dashboard</a></li><li><a href="#">Certificados</a></li>
+          <li><a href="#">Integrações</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Empresa</p>
+        <ul class="footer-links">
+          <li><a href="#">Sobre nós</a></li><li><a href="#">Blog</a></li>
+          <li><a href="#">Carreiras</a></li><li><a href="#">Imprensa</a></li>
+          <li><a href="#">Contato</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-col-title">Suporte</p>
+        <ul class="footer-links">
+          <li><a href="#">Central de Ajuda</a></li><li><a href="#">Documentação</a></li>
+          <li><a href="#">LGPD</a></li><li><a href="#">Termos de Uso</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2026 Lidera360. Todos os direitos reservados.</p>
+      <p class="footer-copy footer-copy-ijcpm">Feito no IJCPM <img src="/ijcpm-logo.png" alt="Logo do prédio IJCPM"/></p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ── data ─────────────────────────────────────────── */
+  const COURSES = {
+    lideranca: [
+      { title:'Liderança Situacional',      duration:'4h 20min', level:'Intermediário', tag:'Mais popular', img:'photo-1552664730-d307ca884978' },
+      { title:'Gestão de Equipes Remotas',  duration:'3h 10min', level:'Avançado',      tag:'Novo',         img:'photo-1600880292203-757bb62b4baf' },
+      { title:'Feedback e Desenvolvimento', duration:'2h 45min', level:'Básico',        tag:'',             img:'photo-1519389950473-47ba0277781c' },
+      { title:'Comunicação Executiva',      duration:'5h 00min', level:'Avançado',      tag:'',             img:'photo-1557804506-669a67965ba0' },
+    ],
+    vendas: [
+      { title:'Técnicas de Negociação', duration:'3h 30min', level:'Intermediário', tag:'Mais popular', img:'photo-1521737604893-d14cc237f11d' },
+      { title:'CRM e Funil de Vendas',  duration:'2h 50min', level:'Básico',        tag:'',             img:'photo-1553877522-43269d4ea984' },
+      { title:'Inside Sales Avançado',  duration:'4h 15min', level:'Avançado',      tag:'Novo',         img:'photo-1560472354-b33ff0c44a43' },
+      { title:'Atendimento ao Cliente', duration:'2h 00min', level:'Básico',        tag:'',             img:'photo-1556761175-b413da4baf72' },
+    ],
+    compliance: [
+      { title:'LGPD na Prática',                 duration:'3h 00min', level:'Básico',        tag:'Obrigatório', img:'photo-1450101499163-c8848c66ca85' },
+      { title:'Ética Corporativa',               duration:'2h 30min', level:'Básico',        tag:'Obrigatório', img:'photo-1507003211169-0a1dd7228f2d' },
+      { title:'Prevenção à Lavagem de Dinheiro', duration:'4h 00min', level:'Intermediário', tag:'',            img:'photo-1554224155-6726b3ff858f' },
+      { title:'Segurança da Informação',         duration:'3h 45min', level:'Intermediário', tag:'Novo',        img:'photo-1563013544-824ae1b704d3' },
+    ],
+    produtividade: [
+      { title:'Gestão do Tempo',    duration:'2h 15min', level:'Básico',        tag:'Mais popular', img:'photo-1484480974693-6ca0a78fb36b' },
+      { title:'Metodologias Ágeis', duration:'5h 30min', level:'Intermediário', tag:'',             img:'photo-1507925921958-8a62f3d1a50d' },
+      { title:'OKRs na Prática',    duration:'3h 20min', level:'Intermediário', tag:'Novo',         img:'photo-1460925895917-afdab827c52f' },
+      { title:'Deep Work e Foco',   duration:'2h 00min', level:'Básico',        tag:'',             img:'photo-1434030216411-0b793f4b4173' },
+    ],
+    rh: [
+      { title:'Diversidade e Inclusão', duration:'3h 00min', level:'Básico',        tag:'Recomendado', img:'photo-1573164713988-8665fc963095' },
+      { title:'Onboarding Eficaz',      duration:'2h 30min', level:'Intermediário', tag:'',            img:'photo-1531482615713-2afd69097998' },
+      { title:'Employer Branding',      duration:'3h 50min', level:'Avançado',      tag:'Novo',        img:'photo-1522071820081-009f0129c71c' },
+      { title:'Clima e Engajamento',    duration:'2h 45min', level:'Intermediário', tag:'',            img:'photo-1568992687947-868a62a9f521' },
+    ],
+    tecnologia: [
+      { title:'Excel Avançado para Negócios',        duration:'6h 00min', level:'Intermediário', tag:'Mais popular', img:'photo-1498050108023-c5249f4df085' },
+      { title:'Inteligência Artificial no Trabalho', duration:'4h 30min', level:'Básico',        tag:'Novo',         img:'photo-1677442136019-21780ecad995' },
+      { title:'Power BI Essencial',                  duration:'5h 15min', level:'Intermediário', tag:'',             img:'photo-1551288049-bebda4e38f71' },
+      { title:'Segurança Digital para Equipes',      duration:'2h 20min', level:'Básico',        tag:'',             img:'photo-1510511459019-5dda7724fd87' },
+    ],
+  }
+
+  const LEVEL_COLORS = {
+    'Básico':'#22b847', 'Intermediário':'#0f1272',
+    'Avançado':'#f97316', 'Obrigatório':'#ef4444', 'Recomendado':'#3b82f6',
+  }
+
+  /* ── render course cards ──────────────────────────── */
+  function renderCourses() {
+    Object.entries(COURSES).forEach(([key, list]) => {
+      const grid = document.getElementById('grid-' + key)
+      if (!grid) return
+      grid.innerHTML = list.map(c => {
+        const color = LEVEL_COLORS[c.level] || '#6b7280'
+        const tag = c.tag ? `<span class="course-tag">${c.tag}</span>` : ''
+        return `
+          <div class="course-card">
+            <div class="course-thumb">
+              <img src="https://images.unsplash.com/${c.img}?w=400&h=240&fit=crop&auto=format" alt="${c.title}" loading="lazy"/>
+              ${tag}
+            </div>
+            <div class="course-body">
+              <p class="course-title">${c.title}</p>
+              <div class="course-meta">
+                <span class="course-dur">${c.duration}</span>
+                <span class="course-level" style="color:${color};border-color:${color}">${c.level}</span>
+              </div>
+            </div>
+          </div>`
+      }).join('')
+    })
+  }
+
+  /* ── tabs ─────────────────────────────────────────── */
+  document.getElementById('courseTabs').addEventListener('click', e => {
+    const btn = e.target.closest('.tab-btn')
+    if (!btn) return
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
+    btn.classList.add('active')
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active')
+  })
+
+  /* ── menu ─────────────────────────────────────────── */
+  const hamburger    = document.getElementById('hamburger')
+  const menuBackdrop = document.getElementById('menuBackdrop')
+  const menuPanel    = document.getElementById('menuPanel')
+  const menuClose    = document.getElementById('menuClose')
+  const menuLoginBtn = document.getElementById('menuLoginBtn')
+
+  function openMenu() {
+    clearTimeout(menuPanel._closeTimer)
+    menuPanel.classList.remove('closing')
+    hamburger.classList.add('open')
+    menuBackdrop.classList.add('open')
+    menuPanel.classList.add('open')
+    document.body.style.overflow = 'hidden'
+  }
+  function closeMenu() {
+    hamburger.classList.remove('open')
+    menuBackdrop.classList.remove('open')
+    menuPanel.classList.add('closing')
+    menuPanel.classList.remove('open')
+    document.body.style.overflow = ''
+    clearTimeout(menuPanel._closeTimer)
+    menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 320)
+  }
+
+  hamburger.addEventListener('click', () => menuPanel.classList.contains('open') ? closeMenu() : openMenu())
+  menuBackdrop.addEventListener('click', closeMenu)
+  menuClose.addEventListener('click', closeMenu)
+  menuLoginBtn.addEventListener('click', () => { closeMenu(); openLogin() })
+  menuPanel.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu))
+
+  /* ── login modal ──────────────────────────────────── */
+  const loginModal = document.getElementById('loginModal')
+  const loginBox   = document.getElementById('loginBox')
+
+  function openLogin() {
+    loginModal.style.display = 'flex'
+    loginModal.offsetHeight  // reflow
+    loginModal.classList.remove('leaving');  loginBox.classList.remove('leaving')
+    loginModal.classList.add('entering');    loginBox.classList.add('entering')
+  }
+  function closeLogin() {
+    loginModal.classList.remove('entering'); loginBox.classList.remove('entering')
+    loginModal.classList.add('leaving');     loginBox.classList.add('leaving')
+    setTimeout(() => {
+      loginModal.style.display = 'none'
+      loginModal.classList.remove('leaving'); loginBox.classList.remove('leaving')
+    }, 260)
+  }
+
+  document.getElementById('navLoginBtn').addEventListener('click', openLogin)
+  document.getElementById('loginClose').addEventListener('click', closeLogin)
+  loginModal.addEventListener('click', e => { if (e.target === loginModal) closeLogin() })
+
+  /* ── eye toggle ───────────────────────────────────── */
+  let passVisible = false
+  document.getElementById('eyeBtn').addEventListener('click', () => {
+    passVisible = !passVisible
+    const input = document.getElementById('loginPassword')
+    input.type = passVisible ? 'text' : 'password'
+    document.getElementById('eyeIcon').innerHTML = passVisible
+      ? `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`
+      : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`
+  })
+
+  /* ── init ─────────────────────────────────────────── */
+  renderCourses()
+
+  /* ── aura do vídeo (sobre nós): flutua sozinha + acompanha o mouse ── */
+  ;(function () {
+    const frame = document.getElementById('aboutVideoFrame')
+    if (!frame) return
+    const blobs = Array.from(frame.querySelectorAll('.aura-blob'))
+    if (!blobs.length) return
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return // respeita quem prefere menos animação
+
+    let targetX = 0.5, targetY = 0.5 // posição do mouse normalizada (0–1)
+    let curX = 0.5, curY = 0.5       // posição suavizada (lerp)
+
+    frame.addEventListener('mousemove', e => {
+      const rect = frame.getBoundingClientRect()
+      targetX = (e.clientX - rect.left) / rect.width
+      targetY = (e.clientY - rect.top) / rect.height
+    })
+    frame.addEventListener('mouseleave', () => {
+      targetX = 0.5
+      targetY = 0.5
+    })
+    // suporte básico a touch: usa o toque como posição do mouse
+    frame.addEventListener('touchmove', e => {
+      const t = e.touches[0]
+      if (!t) return
+      const rect = frame.getBoundingClientRect()
+      targetX = (t.clientX - rect.left) / rect.width
+      targetY = (t.clientY - rect.top) / rect.height
+    }, { passive: true })
+
+    const start = performance.now()
+    function tick(now) {
+      // suaviza o movimento do mouse (lerp)
+      curX += (targetX - curX) * 0.06
+      curY += (targetY - curY) * 0.06
+
+      const t = (now - start) / 1000
+      blobs.forEach((blob, i) => {
+        const depth = parseFloat(blob.dataset.depth) || 1
+        // flutuação orgânica contínua (própria de cada blob)
+        const floatX = Math.sin(t * (0.28 + i * 0.13) + i * 2.1) * 16
+        const floatY = Math.cos(t * (0.22 + i * 0.11) + i * 1.4) * 16
+        // deslocamento em direção ao mouse, proporcional à "profundidade"
+        const parallaxX = (curX - 0.5) * 70 * depth
+        const parallaxY = (curY - 0.5) * 70 * depth
+        blob.style.transform = `translate(${floatX + parallaxX}px, ${floatY + parallaxY}px)`
+      })
+      requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  })()
+</script>
+<script src="themeSwitch.js"></script>
+<script src="Headerscroll.js"></script>
+</body>
+</html>

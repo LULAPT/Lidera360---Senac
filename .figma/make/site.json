@@ -1,0 +1,10 @@
+{
+  "description": "Create and customize professional landing pages quickly to showcase products, services, or events and boost online engagement and conversions.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
