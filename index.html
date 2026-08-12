@@ -508,9 +508,11 @@
     .trilha-icon {
       width:48px; height:48px; border-radius:14px;
       background:rgba(47,213,90,.12);
+      color:var(--green);
       display:flex; align-items:center; justify-content:center;
-      font-size:1.4rem; flex-shrink:0;
+      flex-shrink:0;
     }
+    .trilha-icon svg { width:23px; height:23px; }
 
     .trilha-info { flex:1; min-width:0; }
     .trilha-name { font-weight:700; font-size:1rem; margin-bottom:.35rem; }
@@ -603,9 +605,11 @@
     .feature-icon {
       width:48px; height:48px; border-radius:14px;
       background:rgba(47,213,90,.12);
+      color:var(--green);
       display:flex; align-items:center; justify-content:center;
-      font-size:1.4rem; margin-bottom:1rem;
+      margin-bottom:1rem;
     }
+    .feature-icon svg { width:23px; height:23px; }
     .feature-title { font-weight:700; font-size:.95rem; margin-bottom:.5rem; }
     .feature-body  { font-size:.83rem; line-height:1.65; color:var(--muted); }
 
@@ -1096,12 +1100,12 @@ html.theme-dark .hamburger {
       <h2 class="section-title">Tudo que o RH precisa <span class="accent">em um só lugar</span></h2>
     </div>
     <div class="features-grid">
-      <div class="feature-card"><div class="feature-icon">🎯</div><p class="feature-title">Trilhas Personalizadas</p><p class="feature-body">Monte jornadas de aprendizagem por cargo, departamento ou meta estratégica — sem customização técnica.</p></div>
-      <div class="feature-card"><div class="feature-icon">📊</div><p class="feature-title">Dashboard em Tempo Real</p><p class="feature-body">Acompanhe progresso e engajamento por equipe. Relatórios exportáveis para o RH e gestores.</p></div>
-      <div class="feature-card"><div class="feature-icon">👥</div><p class="feature-title">Multiusuário por Empresa</p><p class="feature-body">Cada colaborador tem perfil, histórico e certificado próprios. Gestores têm visão consolidada do time.</p></div>
-      <div class="feature-card"><div class="feature-icon">🏆</div><p class="feature-title">Certificação Automática</p><p class="feature-body">Certificados digitais gerados ao concluir trilhas. Válidos para comprovação interna e externa.</p></div>
-      <div class="feature-card"><div class="feature-icon">📱</div><p class="feature-title">Mobile-First</p><p class="feature-body">Funciona em qualquer dispositivo. O colaborador aprende no ritmo dele — celular, tablet ou desktop.</p></div>
-      <div class="feature-card"><div class="feature-icon">🛡️</div><p class="feature-title">Conformidade Garantida</p><p class="feature-body">Trilhas de compliance com rastreabilidade total. Histórico de aceites acessível por auditoria.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><p class="feature-title">Trilhas Personalizadas</p><p class="feature-body">Monte jornadas de aprendizagem por cargo, departamento ou meta estratégica — sem customização técnica.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><p class="feature-title">Dashboard em Tempo Real</p><p class="feature-body">Acompanhe progresso e engajamento por equipe. Relatórios exportáveis para o RH e gestores.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><p class="feature-title">Multiusuário por Empresa</p><p class="feature-body">Cada colaborador tem perfil, histórico e certificado próprios. Gestores têm visão consolidada do time.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div><p class="feature-title">Certificação Automática</p><p class="feature-body">Certificados digitais gerados ao concluir trilhas. Válidos para comprovação interna e externa.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><p class="feature-title">Mobile-First</p><p class="feature-body">Funciona em qualquer dispositivo. O colaborador aprende no ritmo dele — celular, tablet ou desktop.</p></div>
+      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><p class="feature-title">Conformidade Garantida</p><p class="feature-body">Trilhas de compliance com rastreabilidade total. Histórico de aceites acessível por auditoria.</p></div>
     </div>
   </div>
 </section>
@@ -1236,7 +1240,7 @@ html.theme-dark .hamburger {
     {
       id: 'vendas',
       nome: 'Vendas',
-      icon: '💼',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>',
       desc: 'Processo comercial, relacionamento com clientes, gestão financeira e operacional e aplicação prática da legislação de proteção ao consumidor.',
       modulos: [
         'Técnicas de Negociação',
@@ -1249,7 +1253,7 @@ html.theme-dark .hamburger {
     {
       id: 'lideranca',
       nome: 'Liderança',
-      icon: '🧭',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
       desc: 'Preparação para conduzir equipes, administrar diferentes perfis, desenvolver pessoas e estabelecer uma comunicação estratégica.',
       modulos: [
         'Liderança Situacional',
@@ -1261,7 +1265,7 @@ html.theme-dark .hamburger {
     {
       id: 'tecnologia',
       nome: 'Tecnologia',
-      icon: '💻',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
       desc: 'Competências digitais fundamentais para aumentar produtividade, segurança e capacidade de análise no dia a dia.',
       modulos: [
         'Excel',
@@ -1274,7 +1278,7 @@ html.theme-dark .hamburger {
     {
       id: 'rh',
       nome: 'RH & Cultura',
-      icon: '🤝',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
       desc: 'Gestão de pessoas, integração, diversidade, experiência dos colaboradores e ambientes organizacionais mais saudáveis.',
       modulos: [
         'Diversidade e Inclusão',
@@ -1286,7 +1290,7 @@ html.theme-dark .hamburger {
     {
       id: 'produtividade',
       nome: 'Produtividade',
-      icon: '⚡',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
       desc: 'Métodos e ferramentas para organização pessoal e profissional, gestão de prioridades e qualidade nas entregas.',
       modulos: [
         'Gestão de Tempo',
