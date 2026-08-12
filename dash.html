@@ -276,10 +276,19 @@
       transition:opacity .25s ease, background-color .25s ease;
     }
     .dash-avatar:hover .dash-avatar-overlay {
-      opacity:1; background:rgba(9,11,82,.6);
+      opacity:1; background:rgba(51, 51, 51, 0.315);
     }
     .dash-avatar-overlay svg { width:22px; height:22px; }
     .dash-greeting { font-size:1.35rem; font-weight:800; line-height:1.2; }
+    /* cursor de "digitando" do efeito typing.js na saudação */
+    .typing-cursor {
+      display:inline-block;
+      margin-left:2px;
+      color:var(--rgb);
+      font-weight:400;
+      animation:cursorBlink 1s step-end infinite;
+    }
+    @keyframes cursorBlink { 0%, 100% { opacity:1; } 50% { opacity:0; } }
     .dash-sub { font-size:.8rem; color:var(--muted); margin-top:2px; }
     .dash-back { margin-left:auto; }
 
@@ -300,53 +309,99 @@
        via tap no touch) ──────────────────────────────── */
     .dash-trilhas { position:relative; padding:2.5rem 0 5rem; }
 
+    /* o layout deixou de ser CSS Grid puro: com grid normal, quando um
+       card cresce (abre os módulos) ele estica a ALTURA DA LINHA
+       inteira, e o card vizinho (mesmo com align-items:start) fica
+       parado no topo daquela linha alta, sobrando espaço vazio do
+       lado. Isso é a limitação do grid — ele não tem masonry nativo
+       com suporte amplo ainda. Por isso o .trilha-grid vira apenas um
+       container relative, e os .trilha-card são posicionados via JS
+       (função layoutMasonry, no JS abaixo) com position:absolute
+       + top/left calculados pra "coluna mais curta" — assim só a
+       coluna do card que abriu se reorganiza, as outras ficam paradas. */
     .trilha-grid {
-      display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
-      align-items:start; /* cada card mantém sua própria altura em vez de esticar junto com o vizinho */
+      position:relative;
+      width:100%;
+    }
+
+    /* overlay de blur de fundo: acende atrás do card em destaque
+       (hover no desktop / tap no touch) e borra o restante da tela */
+    .trilha-blur-overlay {
+      position:fixed; inset:0; z-index:15;
+      pointer-events:none;
+      opacity:0;
+      background:rgba(15,18,114,0);
+      backdrop-filter:blur(0px);
+      -webkit-backdrop-filter:blur(0px);
+      transition:opacity .4s ease, backdrop-filter .4s ease,
+                 -webkit-backdrop-filter .4s ease, background-color .4s ease;
+    }
+    .trilha-blur-overlay.active {
+      opacity:1;
+      background:rgba(15,18,114,.1);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+    }
+    html.theme-dark .trilha-blur-overlay.active { background:rgba(2,3,15,.4); }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .trilha-blur-overlay.active { background:rgba(2,3,15,.4); }
     }
 
     .trilha-card {
       background:var(--white); border:1.5px solid var(--border);
       border-radius:20px; overflow:hidden;
-      transition:box-shadow .3s ease, transform .3s ease, border-color .3s ease, background-color .35s ease;
+      /* position:absolute + top/left calculados pelo layoutMasonry() —
+         isso é o que permite que só a coluna do card aberto se mova */
+      position:absolute;
+      top:0; left:0;
+      transform-style: preserve-3d;
+      will-change: transform, top, left;
+      /* o transform do hover é escrito diretamente pelo JS a cada
+         evento de mouse — aqui só definimos a transição pra quando o
+         JS NÃO estiver mexendo (ex: estado :focus-within pelo teclado)
+         e pra suavizar o reflow do masonry (top/left) quando um card
+         abre/fecha ou a janela é redimensionada */
+      transition:box-shadow .3s ease, border-color .3s ease,
+                 background-color .35s ease, transform .5s cubic-bezier(.16,1,.3,1),
+                 top .45s cubic-bezier(.16,1,.3,1), left .45s cubic-bezier(.16,1,.3,1);
       opacity:0;
       animation:dashCardIn .5s ease both;
     }
 
-    /* estado "aberto": compartilhado por foco de teclado (todos os
-       dispositivos) e pela classe .is-open, que o JS aplica no tap
-       quando o dispositivo não tem hover real (touch) */
-    .trilha-card:focus-within,
-    .trilha-card.is-open {
-      box-shadow:0 8px 32px rgba(15,18,114,.1);
-      transform:translateY(-2px);
-      border-color:var(--green);
-    }
-    .trilha-card:focus-within .trilha-toggle-arrow,
-    .trilha-card.is-open .trilha-toggle-arrow { transform:rotate(90deg); }
-    .trilha-card:focus-within .trilha-modules-wrap,
-    .trilha-card.is-open .trilha-modules-wrap { grid-template-rows: 1fr; }
-    .trilha-card:focus-within .trilha-module,
-    .trilha-card.is-open .trilha-module {
-      animation:moduleFadeIn .28s ease forwards;
-      animation-delay:calc(var(--i, 0) * 45ms);
+    /* enquanto o JS está animando o tilt via rAF (mousemove ativo),
+       tiramos a transição do transform: o próprio loop (lerp) já
+       suaviza o movimento, então a "transition" do CSS só ia
+       introduzir atraso por cima do que o JS já está calculando */
+    .trilha-card.is-tilting {
+      transition:box-shadow .3s ease, border-color .3s ease, background-color .35s ease;
     }
 
-    /* :hover só entra em ação em dispositivos que realmente têm mouse
-       (hover:hover + pointer:fine) — em telas de toque isso nunca
-       "gruda" ligado depois do tap, porque a regra nem existe ali */
-    @media (hover:hover) and (pointer:fine) {
-      .trilha-card:hover {
-        box-shadow:0 8px 32px rgba(15,18,114,.1);
-        transform:translateY(-2px);
-        border-color:var(--green);
-      }
-      .trilha-card:hover .trilha-toggle-arrow { transform:rotate(90deg); }
-      .trilha-card:hover .trilha-modules-wrap { grid-template-rows: 1fr; }
-      .trilha-card:hover .trilha-module {
-        animation:moduleFadeIn .28s ease forwards;
-        animation-delay:calc(var(--i, 0) * 45ms);
-      }
+    /* estado "aberto": compartilhado por foco de teclado (todos os
+       dispositivos), pela classe .is-open (tap em touch) e por
+       .is-active (aplicada pelo JS no mouseenter, no desktop) */
+    .trilha-card:focus-within,
+    .trilha-card.is-open,
+    .trilha-card.is-active {
+      box-shadow:0 8px 32px rgba(15,18,114,.1);
+      border-color:var(--green);
+      z-index:20;
+    }
+    /* fallback só de teclado: sem JS de mousemove rolando, ainda
+       precisa "vir pra frente" com transform simples via CSS */
+    .trilha-card:focus-within:not(.is-tilting) {
+      transform: perspective(900px) translateY(-4px) translateZ(24px) scale(1.015);
+    }
+    .trilha-card:focus-within .trilha-toggle-arrow,
+    .trilha-card.is-open .trilha-toggle-arrow,
+    .trilha-card.is-active .trilha-toggle-arrow { transform:rotate(90deg); }
+    .trilha-card:focus-within .trilha-modules-wrap,
+    .trilha-card.is-open .trilha-modules-wrap,
+    .trilha-card.is-active .trilha-modules-wrap { grid-template-rows: 1fr; }
+    .trilha-card:focus-within .trilha-module,
+    .trilha-card.is-open .trilha-module,
+    .trilha-card.is-active .trilha-module {
+      animation:moduleFadeIn .28s ease forwards;
+      animation-delay:calc(var(--i, 0) * 45ms);
     }
 
     .trilha-summary {
@@ -537,7 +592,7 @@
         </span>
       </div>
       <div>
-        <p class="dash-greeting" id="dashGreeting">Olá, Dharlan 👋</p>
+        <p class="dash-greeting" id="dashGreeting"><span id="dashGreetingText"></span><span class="typing-cursor" id="dashCursor">|</span></p>
         <p class="dash-sub" id="dashSub">Auxiliar de vendedor · Narciso Enxovais</p>
       </div>
       <a href="index.html" class="btn-outline dash-back hide-mobile">Voltar ao site</a>
@@ -552,6 +607,9 @@
     </div>
   </div>
 </section>
+
+<!-- overlay de blur de fundo, acende atrás do trilha-card em destaque -->
+<div class="trilha-blur-overlay" id="trilhaBlurOverlay"></div>
 
 <!-- ── Trilhas com progresso individual (abre no hover / tap) ── -->
 <section class="dash-trilhas">
@@ -579,6 +637,26 @@
 </footer>
 
 <script>
+  /* ── typing effect: escreve só a saudação, cursor fica piscando no
+     final (adaptado do typing.js — aqui sem o loop de apagar/trocar
+     textos, já que é uma frase fixa só) ─────────────────────────── */
+  (function () {
+    const GREETING_TEXT = "Olá, Dharlan 👋"
+    const el = document.getElementById('dashGreetingText')
+    if (!el) return
+    let i = 0
+    function typeWriter() {
+      if (i < GREETING_TEXT.length) {
+        el.textContent = GREETING_TEXT.substring(0, i + 1)
+        i++
+        setTimeout(typeWriter, 90)
+      }
+      // ao terminar, não faz nada: o cursor (elemento separado, ao lado)
+      // continua piscando via CSS pra sempre, como pedido
+    }
+    typeWriter()
+  })()
+
   /* ── dados: mesmas trilhas/módulos do catálogo no index ─────────── */
   const TRILHAS = [
     {
@@ -733,22 +811,189 @@
     })
   }
 
+  const trilhaGrid  = document.getElementById('trilhaGrid')
+  const blurOverlay = document.getElementById('trilhaBlurOverlay')
+
   renderDashboard()
 
-  /* ── trilhas em telas de toque: sem hover real, então a abertura
-     acontece no tap (delegado no container, sobrevive a re-renders) ── */
-  const trilhaGrid   = document.getElementById('trilhaGrid')
+  /* ── FIX: libera a propriedade "transform"/"opacity" da animação de
+     entrada assim que ela termina. Com fill-mode "both", o keyframe
+     dashCardIn continua "segurando" opacity:1 e transform:translateY(0)
+     na propriedade mesmo depois de acabar. Se a gente só faz
+     style.animation = 'none' (sem fixar opacity), o card volta pra
+     regra base do CSS (.trilha-card { opacity:0 }) e some da tela —
+     foi exatamente esse o bug. Por isso aqui fixamos opacity:1 junto,
+     e a partir daí a propriedade "transform" fica livre pro hover
+     controlar via inline style. Delegado no trilhaGrid pra funcionar
+     em todos os cards, mesmo antes do primeiro hover. ── */
+  trilhaGrid.addEventListener('animationend', (e) => {
+    if (e.animationName === 'dashCardIn' && e.target.classList.contains('trilha-card')) {
+      e.target.style.animation = 'none'
+      e.target.style.opacity = '1'
+    }
+  })
+
+  /* ── MASONRY: cada .trilha-card é posicionado com position:absolute
+     (top/left calculados aqui). Em vez de uma linha de grid inteira
+     esticar quando um card abre, cada card entra na coluna mais curta
+     no momento — então abrir um card só empurra pra baixo o que está
+     NA MESMA COLUNA dele, o resto do layout fica parado. ─────────── */
+  const MASONRY_MIN_COL_WIDTH = 300  // mesmo valor do antigo minmax(300px, 1fr)
+  const MASONRY_GAP = 20             // 1.25rem, mesmo gap do grid antigo
+
+  let masonryRaf = null
+  function layoutMasonry() {
+    const containerWidth = trilhaGrid.clientWidth
+    if (!containerWidth) return
+
+    const columns = Math.max(1, Math.floor((containerWidth + MASONRY_GAP) / (MASONRY_MIN_COL_WIDTH + MASONRY_GAP)))
+    const colWidth = (containerWidth - MASONRY_GAP * (columns - 1)) / columns
+    const colHeights = new Array(columns).fill(0)
+
+    const cards = trilhaGrid.querySelectorAll(':scope > .trilha-card')
+    cards.forEach(card => {
+      // acha a coluna mais curta no momento
+      let target = 0
+      for (let i = 1; i < columns; i++) {
+        if (colHeights[i] < colHeights[target]) target = i
+      }
+      card.style.width = colWidth + 'px'
+      card.style.left  = (target * (colWidth + MASONRY_GAP)) + 'px'
+      card.style.top   = colHeights[target] + 'px'
+      colHeights[target] += card.offsetHeight + MASONRY_GAP
+    })
+
+    trilhaGrid.style.height = (Math.max(0, ...colHeights) - MASONRY_GAP) + 'px'
+  }
+
+  function requestLayoutMasonry() {
+    if (masonryRaf) return
+    masonryRaf = requestAnimationFrame(() => {
+      masonryRaf = null
+      layoutMasonry()
+    })
+  }
+
+  // layout inicial (síncrono, os cards já estão no DOM depois do innerHTML)
+  layoutMasonry()
+
+  // recalcula sempre que a JANELA muda de tamanho (recontagem de colunas)
+  window.addEventListener('resize', requestLayoutMasonry)
+
+  // recalcula sempre que a ALTURA de algum card muda — é isso que
+  // acontece continuamente durante a transição de abrir/fechar os
+  // módulos (grid-template-rows 0fr -> 1fr), então o reflow acompanha
+  // suavemente em vez de só "pular" no fim da animação
+  const cardResizeObserver = new ResizeObserver(() => requestLayoutMasonry())
+  function observeCards() {
+    trilhaGrid.querySelectorAll(':scope > .trilha-card').forEach(card => cardResizeObserver.observe(card))
+  }
+  observeCards()
+
+  /* ── interação dos trilha-card: hover no desktop com tilt 3D que
+     segue o mouse (adaptado do seu snippet de referência — sem loop de
+     rAF/lerp, escreve o transform direto nos eventos de mouse) e tap
+     no touch, ambos acendendo o blur de fundo enquanto o card está em
+     destaque. Como os cards são recriados a cada renderDashboard(),
+     os listeners ficam presos no trilhaGrid (delegação de evento) em
+     vez de em cada card individualmente. ─────────────────────────── */
   const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
   if (!supportsHover) {
-    trilhaGrid.addEventListener('click', (e) => {
+    // touch: sem hover real, então a abertura + blur acontecem no tap.
+    //
+    // Antes isso era feito com DOIS listeners de 'click' separados (um no
+    // trilhaGrid pra abrir/fechar, outro no document em fase de captura
+    // pra fechar-ao-tocar-fora) — e essa divisão é o que causava a
+    // inconsistência: dependendo de onde o toque caía, a ordem/õs efeitos
+    // colaterais entre os dois podiam divergir e o overlay de blur ficava
+    // dessincronizado do estado real do card (ligado nuns casos, não
+    // ligado em outros).
+    //
+    // Agora é UM ÚNICO listener, com o card aberto guardado numa variável
+    // JS (não mais "lido" do DOM via querySelector a cada toque). Regra
+    // única e definitiva: se existe um card aberto e o toque não foi
+    // dentro DELE MESMO, esse toque só fecha — nunca abre outro card,
+    // seja lá onde tiver caído (em outro trilha-card ou fora de todos).
+    let openCard = null
+
+    function fecharCardAberto() {
+      if (!openCard) return
+      openCard.classList.remove('is-open')
+      if (blurOverlay) blurOverlay.classList.remove('active')
+      openCard = null
+    }
+
+    function abrirCard(card) {
+      openCard = card
+      card.classList.add('is-open')
+      if (blurOverlay) blurOverlay.classList.add('active')
+    }
+
+    document.addEventListener('click', (e) => {
       const summary = e.target.closest('.trilha-summary')
-      if (!summary) return
-      const card = summary.closest('.trilha-card')
+      const tappedCard = summary ? summary.closest('.trilha-card') : null
+
+      if (openCard) {
+        fecharCardAberto()
+        // se o toque foi no próprio card aberto, era um toggle de fechar
+        // — já fechou, não faz mais nada. Se foi em qualquer outro lugar
+        // (outro card ou fora), também só fecha: NÃO abre o que foi tocado.
+        return
+      }
+
+      // nenhum card aberto no momento: um toque num summary abre normalmente
+      if (tappedCard) abrirCard(tappedCard)
+    })
+  } else {
+    const INTENSITY = 8      // graus máximos de rotação
+    const LIFT_PX    = 5     // sobe 5px ao entrar
+    const SCALE      = 1.02  // scale mais sutil que o original (1.05) pra não "tremer" o texto do card
+
+    // "entrou" no card: mouseover só dispara de novo se relatedTarget
+    // (de onde o mouse veio) não estava dentro do mesmo card — evita
+    // reacionar a cada micro-movimento entre elementos filhos
+    trilhaGrid.addEventListener('mouseover', (e) => {
+      const card = e.target.closest('.trilha-card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      card.classList.add('is-active')
+      card.style.transition = 'transform .3s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease'
+      card.style.boxShadow = '0 15px 30px rgba(15,18,114,.18), 0 0 15px rgba(47,213,90,.25)'
+      card.style.transform = `perspective(1000px) translateY(-${LIFT_PX}px) scale3d(${SCALE}, ${SCALE}, ${SCALE})`
+      if (blurOverlay) blurOverlay.classList.add('active')
+    })
+
+    // movimento do mouse dentro do card: recalcula o tilt a cada frame de mousemove
+    trilhaGrid.addEventListener('mousemove', (e) => {
+      const card = e.target.closest('.trilha-card')
       if (!card) return
-      const wasOpen = card.classList.contains('is-open')
-      trilhaGrid.querySelectorAll('.trilha-card.is-open').forEach(c => c.classList.remove('is-open'))
-      if (!wasOpen) card.classList.add('is-open')
+      const rect = card.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+      const offsetX = (x - centerX) / centerX
+      const offsetY = (y - centerY) / centerY
+
+      card.style.transition = 'transform .1s ease' // transição mais rápida durante o movimento
+      card.style.transform = `
+        perspective(1000px)
+        translateY(-${LIFT_PX}px)
+        rotateX(${(offsetY * INTENSITY).toFixed(2)}deg)
+        rotateY(${(offsetX * INTENSITY).toFixed(2)}deg)
+        scale3d(${SCALE}, ${SCALE}, ${SCALE})
+      `
+    })
+
+    // "saiu" do card: mesma lógica de relatedTarget, pro lado contrário
+    trilhaGrid.addEventListener('mouseout', (e) => {
+      const card = e.target.closest('.trilha-card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      card.classList.remove('is-active')
+      card.style.transition = 'transform .5s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease'
+      card.style.boxShadow = ''
+      card.style.transform = 'perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)'
+      if (blurOverlay) blurOverlay.classList.remove('active')
     })
   }
 
