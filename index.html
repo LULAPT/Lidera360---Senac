@@ -24,7 +24,11 @@
     img { display: block; }
     ul { list-style: none; }
     ::-webkit-scrollbar { width: 0; }
-    ::selection { background: rgba(47,213,90,.3); color: var(--ink); }
+    /* ::selection nativa comentada temporariamente — testando o efeito
+       de "marca-texto" via JS (ver script no fim do body). Pra voltar
+       ao normal é só descomentar essa linha e remover o script. */
+    /* ::selection { background: rgba(47,213,90,.3); color: var(--ink); } */
+    ::selection { background: transparent; } /* deixa só o traço do JS aparecer */
 
     /* remove o retângulo/flash azul ao tocar (mobile) e o contorno azul
        padrão do navegador ao clicar/focar em links, botões etc. */
@@ -56,6 +60,8 @@
       --border: rgba(15,18,114,.14);
       /* adaptive text color: navy on light theme, light ink on dark theme */
       --ink:    var(--navy);
+      /* fundo translúcido usado no efeito "glass" do feature-card no hover */
+      --glass-bg: rgba(255,255,255,.55);
     }
 
     /* ── dark theme tokens ───────────────────────────
@@ -68,6 +74,7 @@
       --border: rgba(255,255,255,.14);
       --navyd:  #05061c;
       --ink:    #eef0ff;
+      --glass-bg: rgba(27,28,58,.55);
     }
     @media (prefers-color-scheme: dark) {
       html.theme-auto {
@@ -77,8 +84,10 @@
         --border: rgba(255,255,255,.14);
         --navyd:  #05061c;
         --ink:    #eef0ff;
+        --glass-bg: rgba(27,28,58,.55);
       }
     }
+
 
     /* ── keyframes ─────────────────────────────────── */
     @keyframes modal-in  { from{opacity:0;transform:scale(.94) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
@@ -481,29 +490,64 @@
     .more-link:hover { opacity:.7; }
 
     /* ── dashboard (trilhas) ─────────────────────────────
-       simples de propósito: cards por trilha com a lista de módulos
-       escondida atrás de <details>/<summary> nativo (sem JS extra pra
-       abrir/fechar). Dá pra evoluir depois com progresso real,
-       certificados etc. */
+       cards por trilha com a lista de módulos que expande/recolhe
+       com o mesmo truque de animação do dashboard (dash.html):
+       grid-template-rows 0fr -> 1fr no wrapper, controlado via JS
+       (classe .is-open), com fade escalonado dos módulos. */
     .trilha-grid {
       display:grid; gap:1.25rem;
       grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
     }
 
-    .trilha-card {
-      background:var(--white); border:1.5px solid var(--border);
-      border-radius:20px; overflow:hidden;
-      transition:box-shadow .2s, transform .2s, border-color .2s;
+    @keyframes trilhaModuleFadeIn {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0); }
     }
-    .trilha-card:hover { box-shadow:0 8px 32px rgba(15,18,114,.1); transform:translateY(-2px); }
-    .trilha-card[open] { border-color:var(--green); }
 
-    .trilha-card summary {
-      list-style:none; cursor:pointer;
+    .trilha-card {
+      position:relative;
+      overflow:hidden;
+      --mx:50%; --my:50%; /* posição do glow, atualizada via JS no mousemove */
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:20px;
+      transition:box-shadow .3s ease, border-color .3s ease, background-color .3s ease;
+      will-change:transform;
+    }
+    /* glow verde que segue o mouse, atrás do conteúdo do card (mesma
+       lógica do .feature-card na sessão de features) */
+    .trilha-card::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:radial-gradient(220px circle at var(--mx) var(--my), rgba(47,213,90,.10), transparent 70%);
+      opacity:0;
+      transition:opacity .35s ease;
+      pointer-events:none;
+    }
+    /* "vidro": fundo translúcido + blur, só liga junto com o glow no hover */
+    .trilha-card.is-tilting {
+      background-color:var(--glass-bg);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+    }
+    .trilha-card.is-tilting::before { opacity:1; }
+    .trilha-card.is-open { border-color:var(--green); }
+    /* fallback simples pra quem não tem hover fino (ex.: touch) —
+       em telas com mouse de verdade o JS assume o transform (tilt 3D
+       que segue o cursor, ver script no fim do body) */
+    @media (hover:hover) and (pointer:fine) {
+      .trilha-card:not(.is-tilting) { transition:box-shadow .3s ease, border-color .3s ease, transform .3s ease, background-color .3s ease; }
+    }
+    @media not all and (hover:hover) {
+      .trilha-card:active { box-shadow:0 8px 32px rgba(15,18,114,.1); transform:translateY(-2px); }
+    }
+
+    .trilha-summary {
+      cursor:pointer;
       padding:1.5rem;
       display:flex; align-items:flex-start; gap:1rem;
     }
-    .trilha-card summary::-webkit-details-marker { display:none; }
 
     .trilha-icon {
       width:48px; height:48px; border-radius:14px;
@@ -521,9 +565,23 @@
 
     .trilha-toggle-arrow {
       flex-shrink:0; color:var(--green); margin-top:.35rem;
-      transition:transform .25s ease;
+      transition:transform .4s cubic-bezier(.16,1,.3,1);
     }
-    .trilha-card[open] .trilha-toggle-arrow { transform:rotate(90deg); }
+    .trilha-card.is-open .trilha-toggle-arrow,
+    .trilha-card.is-tilting:not(.is-open) .trilha-toggle-arrow {
+      transform:rotate(90deg);
+    }
+
+    /* truque do grid-template-rows 0fr -> 1fr: anima a altura sem
+       precisar calcular o valor exato em JS, e o resultado fica bem
+       mais suave que um max-height "chutado" (mesmo truque do dash) */
+    .trilha-modules-wrap {
+      display:grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .45s cubic-bezier(.16,1,.3,1);
+    }
+    .trilha-card.is-open .trilha-modules-wrap { grid-template-rows: 1fr; }
+    .trilha-modules-inner { overflow:hidden; }
 
     .trilha-modules {
       padding:0 1.5rem 1.5rem 1.5rem;
@@ -534,6 +592,11 @@
       padding:.65rem .75rem;
       background:var(--bg); border-radius:10px;
       font-size:.8rem; color:var(--ink);
+      opacity:0;
+    }
+    .trilha-card.is-open .trilha-module {
+      animation:trilhaModuleFadeIn .28s ease forwards;
+      animation-delay:calc(var(--i, 0) * 45ms);
     }
     .trilha-module .module-num {
       width:20px; height:20px; border-radius:50%;
@@ -596,11 +659,41 @@
 
     .features-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); }
     .feature-card {
+      position:relative;
+      overflow:hidden;
+      --mx:50%; --my:50%; /* posição do glow, atualizada via JS no mousemove */
       background:var(--white); border:1.5px solid var(--border);
       border-radius:20px; padding:1.75rem;
-      transition:box-shadow .2s, transform .2s;
+      transition:box-shadow .3s ease, border-color .3s ease, background-color .3s ease;
+      will-change:transform;
     }
-    .feature-card:hover { box-shadow:0 8px 32px rgba(15,18,114,.1); transform:translateY(-3px); }
+    /* glow verde que segue o mouse, atrás do conteúdo do card */
+    .feature-card::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:radial-gradient(220px circle at var(--mx) var(--my), rgba(47,213,90,.10), transparent 70%);
+      opacity:0;
+      transition:opacity .35s ease;
+      pointer-events:none;
+    }
+    /* "vidro": fundo translúcido + blur, só liga junto com o glow no hover */
+    .feature-card.is-tilting {
+      background-color:var(--glass-bg);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+    }
+    .feature-card.is-tilting::before { opacity:1; }
+    /* fallback simples pra quem não tem hover fino (ex.: touch) —
+       em telas com mouse de verdade o JS assume o transform (tilt 3D
+       que segue o cursor, ver script no fim do body) */
+    @media (hover:hover) and (pointer:fine) {
+      .feature-card:not(.is-tilting) { transition:box-shadow .3s ease, border-color .3s ease, transform .3s ease; }
+    }
+    @media not all and (hover:hover) {
+      .feature-card:active { box-shadow:0 8px 32px rgba(15,18,114,.1); transform:translateY(-3px); }
+    }
 
     .feature-icon {
       width:48px; height:48px; border-radius:14px;
@@ -686,6 +779,19 @@
       position:absolute; inset:0;
       width:100%; height:100%;
       border:none; display:block;
+    }
+
+    /* pulse bem levinho, disparado via JS depois que o player termina
+       de "surgir" (data-reveal) — ver script no fim do body */
+    @keyframes video-pulse-soft {
+      0%, 100% { transform:scale(1);      box-shadow:0 24px 60px rgba(15,18,114,.15); }
+      50%      { transform:scale(1.012);  box-shadow:0 24px 68px rgba(47,213,90,.22); }
+    }
+    .about-video-wrap.video-pulse {
+      animation:video-pulse-soft 1.7s ease-in-out 2;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .about-video-wrap.video-pulse { animation:none; }
     }
 
     /* ── testimonials ────────────────────────────────── */
@@ -846,6 +952,31 @@ html.theme-dark .hamburger {
   html.theme-auto .hamburger span { background: var(--ink); }
   html.theme-auto .hamburger { border-color: var(--border); }
 }
+
+    /* ── scroll reveal ─────────────────────────────────
+       elementos com [data-reveal] começam invisíveis/deslocados e
+       ganham a classe .in-view quando entram na viewport (ver script
+       no fim do body). data-reveal-group agrupa elementos pra criar
+       um efeito escalonado (stagger) entre irmãos.               */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1);
+      will-change: opacity, transform;
+    }
+    [data-reveal].in-view { opacity: 1; transform: translateY(0); }
+
+    [data-reveal="left"]  { transform: translateX(-48px); }
+    [data-reveal="left"].in-view  { transform: translateX(0); }
+    [data-reveal="right"] { transform: translateX(48px); }
+    [data-reveal="right"].in-view { transform: translateX(0); }
+    [data-reveal="scale"] { transform: scale(.9); }
+    [data-reveal="scale"].in-view { transform: scale(1); }
+    [data-reveal="fade"]  { transform: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -1025,10 +1156,10 @@ html.theme-dark .hamburger {
     <div class="grid-2">
       <!-- left -->
       <div>
-        <div class="hero-badge"><span class="badge-dot"></span>Plataforma de T&D Corporativo</div>
-        <h1 class="hero-title">Treine equipes.<br>Forme <span class="accent">líderes.</span></h1>
-        <p class="hero-body">Mais de 400 cursos em áreas estratégicas, trilhas personalizadas por cargo e relatórios completos para gestores.</p>
-        <div class="hero-ctas">
+        <div class="hero-badge" data-reveal data-reveal-group="hero-left"><span class="badge-dot"></span>Plataforma de T&D Corporativo</div>
+        <h1 class="hero-title" data-reveal data-reveal-group="hero-left">Treine equipes.<br>Forme <span class="accent">líderes.</span></h1>
+        <p class="hero-body" data-reveal data-reveal-group="hero-left">Mais de 400 cursos em áreas estratégicas, trilhas personalizadas por cargo e relatórios completos para gestores.</p>
+        <div class="hero-ctas" data-reveal data-reveal-group="hero-left">
           <button class="btn-green" onclick="window.location='#'">
             Testar 14 dias grátis
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1042,7 +1173,7 @@ html.theme-dark .hamburger {
         </div>
       </div>
       <!-- right -->
-      <div class="hero-card" style="margin-top:2rem;">
+      <div class="hero-card" style="margin-top:2rem;" data-reveal="right">
         <div class="hero-img-wrap">
           <img class="hero-img" src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=520&fit=crop&auto=format" alt="Equipe em treinamento" loading="lazy"/>
         </div>
@@ -1059,10 +1190,10 @@ html.theme-dark .hamburger {
 
     <!-- stats -->
     <div class="stats-bar">
-      <div class="stat-cell"><p class="stat-val">400+</p><p class="stat-lbl">Cursos disponíveis</p></div>
-      <div class="stat-cell"><p class="stat-val">3.200+</p><p class="stat-lbl">Empresas clientes</p></div>
-      <div class="stat-cell"><p class="stat-val">120 mil</p><p class="stat-lbl">Colaboradores ativos</p></div>
-      <div class="stat-cell"><p class="stat-val">4,8★</p><p class="stat-lbl">Avaliação média</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="hero-stats"><p class="stat-val">400+</p><p class="stat-lbl">Cursos disponíveis</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="hero-stats"><p class="stat-val">3.200+</p><p class="stat-lbl">Empresas clientes</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="hero-stats"><p class="stat-val">120 mil</p><p class="stat-lbl">Colaboradores ativos</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="hero-stats"><p class="stat-val">4,8★</p><p class="stat-lbl">Avaliação média</p></div>
     </div>
   </div>
 </section>
@@ -1071,7 +1202,7 @@ html.theme-dark .hamburger {
 <section class="courses-section" id="cursos">
   <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.05);top:-80px;right:-80px;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
-    <div class="section-head">
+    <div class="section-head" data-reveal>
       <div>
         <p class="section-eyebrow">Dashboard</p>
         <h2 class="section-title">Suas trilhas de<br><span class="accent">desenvolvimento</span></h2>
@@ -1080,10 +1211,10 @@ html.theme-dark .hamburger {
 
     <!-- resumo rápido -->
     <div class="stats-bar" style="margin-top:0; margin-bottom:2.5rem;">
-      <div class="stat-cell"><p class="stat-val" id="statTrilhas">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
-      <div class="stat-cell"><p class="stat-val" id="statModulos">0</p><p class="stat-lbl">Módulos no total</p></div>
-      <div class="stat-cell"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
-      <div class="stat-cell"><p class="stat-val">Seu ritmo</p><p class="stat-lbl">Avance quando quiser</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="dash-stats"><p class="stat-val" id="statTrilhas">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="dash-stats"><p class="stat-val" id="statModulos">0</p><p class="stat-lbl">Módulos no total</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="dash-stats"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
+      <div class="stat-cell" data-reveal data-reveal-group="dash-stats"><p class="stat-val">Seu ritmo</p><p class="stat-lbl">Avance quando quiser</p></div>
     </div>
 
     <div class="trilha-grid" id="trilhaGrid"></div>
@@ -1095,17 +1226,17 @@ html.theme-dark .hamburger {
   <div class="circle" style="width:250px;height:250px;background:rgba(15,18,114,.04);bottom:-60px;left:-60px;"></div>
   <div class="circle" style="width:14px;height:14px;background:#f97316;top:60px;right:15%;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
-    <div class="section-center">
+    <div class="section-center" data-reveal>
       <p class="section-eyebrow">Plataforma</p>
       <h2 class="section-title">Tudo que o RH precisa <span class="accent">em um só lugar</span></h2>
     </div>
     <div class="features-grid">
-      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><p class="feature-title">Trilhas Personalizadas</p><p class="feature-body">Monte jornadas de aprendizagem por cargo, departamento ou meta estratégica — sem customização técnica.</p></div>
-      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><p class="feature-title">Dashboard em Tempo Real</p><p class="feature-body">Acompanhe progresso e engajamento por equipe. Relatórios exportáveis para o RH e gestores.</p></div>
-      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><p class="feature-title">Multiusuário por Empresa</p><p class="feature-body">Cada colaborador tem perfil, histórico e certificado próprios. Gestores têm visão consolidada do time.</p></div>
-      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div><p class="feature-title">Certificação Automática</p><p class="feature-body">Certificados digitais gerados ao concluir trilhas. Válidos para comprovação interna e externa.</p></div>
-      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><p class="feature-title">Mobile-First</p><p class="feature-body">Funciona em qualquer dispositivo. O colaborador aprende no ritmo dele — celular, tablet ou desktop.</p></div>
-      <div class="feature-card"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><p class="feature-title">Conformidade Garantida</p><p class="feature-body">Trilhas de compliance com rastreabilidade total. Histórico de aceites acessível por auditoria.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><p class="feature-title">Trilhas Personalizadas</p><p class="feature-body">Monte jornadas de aprendizagem por cargo, departamento ou meta estratégica — sem customização técnica.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><p class="feature-title">Dashboard em Tempo Real</p><p class="feature-body">Acompanhe progresso e engajamento por equipe. Relatórios exportáveis para o RH e gestores.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><p class="feature-title">Multiusuário por Empresa</p><p class="feature-body">Cada colaborador tem perfil, histórico e certificado próprios. Gestores têm visão consolidada do time.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div><p class="feature-title">Certificação Automática</p><p class="feature-body">Certificados digitais gerados ao concluir trilhas. Válidos para comprovação interna e externa.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><p class="feature-title">Mobile-First</p><p class="feature-body">Funciona em qualquer dispositivo. O colaborador aprende no ritmo dele — celular, tablet ou desktop.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><p class="feature-title">Conformidade Garantida</p><p class="feature-body">Trilhas de compliance com rastreabilidade total. Histórico de aceites acessível por auditoria.</p></div>
     </div>
   </div>
 </section>
@@ -1116,7 +1247,7 @@ html.theme-dark .hamburger {
   <div class="wrap" style="position:relative;z-index:1;">
     <div class="about-grid">
       <!-- left: texto -->
-      <div>
+      <div data-reveal="left">
         <p class="section-eyebrow">Sobre nós</p>
         <h2 class="section-title" style="margin-bottom:1.25rem;">Quem somos e o que <span class="accent">propomos</span></h2>
         <p class="about-body">
@@ -1147,7 +1278,7 @@ html.theme-dark .hamburger {
         <a href="#" class="btn-green">Conheça nossa proposta</a>
       </div>
       <!-- right: vídeo -->
-      <div class="about-video-frame" id="aboutVideoFrame">
+      <div class="about-video-frame" id="aboutVideoFrame" data-reveal="right">
         <div class="aura-glass"></div>
         <div class="aura-blob aura-blob-1" data-depth="1"></div>
         <div class="aura-blob aura-blob-2" data-depth="-0.8"></div>
@@ -1173,7 +1304,7 @@ html.theme-dark .hamburger {
   <div class="circle" style="width:12px;height:12px;background:#f97316;top:30%;left:8%;"></div>
   <div class="circle" style="width:18px;height:18px;background:#2fd55a;bottom:25%;right:12%;"></div>
   <div class="wrap">
-    <div class="cta-inner">
+    <div class="cta-inner" data-reveal="scale">
       <div>
         <p class="cta-eyebrow">Pronto para começar?</p>
         <h2 class="cta-title">Sua equipe merece o melhor.<br><span class="accent">Comece hoje.</span></h2>
@@ -1307,8 +1438,8 @@ html.theme-dark .hamburger {
     if (!grid) return
 
     grid.innerHTML = TRILHAS.map(t => `
-      <details class="trilha-card">
-        <summary>
+      <div class="trilha-card" data-reveal data-reveal-group="trilhas">
+        <div class="trilha-summary" role="button" tabindex="0" aria-expanded="false">
           <div class="trilha-icon">${t.icon}</div>
           <div class="trilha-info">
             <p class="trilha-name">${t.nome}</p>
@@ -1318,22 +1449,73 @@ html.theme-dark .hamburger {
           <svg class="trilha-toggle-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-        </summary>
-        <div class="trilha-modules">
-          ${t.modulos.map((m, i) => `
-            <div class="trilha-module">
-              <span class="module-num">${i + 1}</span>
-              <span>${m}</span>
-            </div>
-          `).join('')}
         </div>
-      </details>
+        <div class="trilha-modules-wrap">
+          <div class="trilha-modules-inner">
+            <div class="trilha-modules">
+              ${t.modulos.map((m, i) => `
+                <div class="trilha-module" style="--i:${i}">
+                  <span class="module-num">${i + 1}</span>
+                  <span>${m}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
     `).join('')
 
     const totalModulos = TRILHAS.reduce((sum, t) => sum + t.modulos.length, 0)
     document.getElementById('statTrilhas').textContent = TRILHAS.length
     document.getElementById('statModulos').textContent = totalModulos
+
+    // os cards de trilha são criados dinamicamente, então precisam ser
+    // registrados no observer de scroll DEPOIS de existirem no DOM
+    if (window.initScrollReveal) window.initScrollReveal(grid)
   }
+
+  /* ── scroll reveal: anima elementos [data-reveal] ao entrarem na
+     viewport, com stagger entre irmãos que compartilham
+     data-reveal-group. Roda uma vez por elemento (unobserve após). ── */
+  ;(function () {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    const observer = ('IntersectionObserver' in window) ? new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view')
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' }) : null
+
+    function initScrollReveal(root) {
+      root = root || document
+      const groupCounts = {}
+
+      root.querySelectorAll('[data-reveal]').forEach(el => {
+        if (el.classList.contains('in-view')) return
+
+        const group = el.dataset.revealGroup
+        if (group) {
+          groupCounts[group] = groupCounts[group] || 0
+          el.style.transitionDelay = (groupCounts[group] * 90) + 'ms'
+          groupCounts[group]++
+        }
+
+        if (prefersReducedMotion || !observer) {
+          el.classList.add('in-view')
+        } else {
+          observer.observe(el)
+        }
+      })
+    }
+
+    window.initScrollReveal = initScrollReveal
+    document.addEventListener('DOMContentLoaded', () => initScrollReveal())
+    // caso o script rode depois do DOMContentLoaded (defer/final do body)
+    if (document.readyState !== 'loading') initScrollReveal()
+  })()
 
   /* ── partículas do menu (canvas puro, sem libs externas) ──────────── */
   const menuParticles = (function () {
@@ -1603,6 +1785,308 @@ html.theme-dark .hamburger {
       requestAnimationFrame(tick)
     }
     requestAnimationFrame(tick)
+  })()
+
+  /* ── pulse levinho no player, disparado logo após o surgimento
+     (data-reveal) do bloco do vídeo, com um pequeno delay extra ── */
+  ;(function () {
+    const frame = document.getElementById('aboutVideoFrame')
+    if (!frame) return
+    const wrap = frame.querySelector('.about-video-wrap')
+    if (!wrap) return
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
+    const PULSE_DELAY = 400 // ms de respiro depois que o surgimento termina
+
+    function triggerPulse() {
+      setTimeout(() => wrap.classList.add('video-pulse'), PULSE_DELAY)
+    }
+
+    // remove a classe ao final da animação, pra poder disparar de novo
+    // se algum dia o elemento voltar a ficar fora da viewport e reentrar
+    wrap.addEventListener('animationend', () => wrap.classList.remove('video-pulse'))
+
+    if (frame.classList.contains('in-view')) {
+      // já revelado (ex.: reduced motion aplicado no reveal, ou
+      // elemento já estava visível no load) — dispara direto
+      triggerPulse()
+    } else {
+      frame.addEventListener('transitionend', function handler(e) {
+        if (e.propertyName !== 'transform') return
+        frame.removeEventListener('transitionend', handler)
+        triggerPulse()
+      })
+    }
+  })()
+
+  /* ── tilt 3D nos feature-card (sessão "Por que escolher"), seguindo
+     o mouse — mesmo mecanismo dos .trilha-card do dashboard, só que
+     sem o overlay de blur de fundo (aqui é só a animação do card). ── */
+  ;(function () {
+    const featuresGrid = document.querySelector('.features-grid')
+    if (!featuresGrid) return
+
+    const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (!supportsHover) return // touch: fica só o :active simples do CSS
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
+    const INTENSITY = 8      // graus máximos de rotação
+    const LIFT_PX    = 5     // sobe 5px ao entrar
+    const SCALE      = 1.02  // scale sutil, sem "tremer" o texto do card
+
+    featuresGrid.addEventListener('mouseover', (e) => {
+      const card = e.target.closest('.feature-card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      const rect = card.getBoundingClientRect()
+      card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+      card.style.setProperty('--my', `${e.clientY - rect.top}px`)
+      card.classList.add('is-tilting')
+      card.style.transition = 'transform .3s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease, backdrop-filter .35s ease'
+      card.style.boxShadow = '0 15px 30px rgba(15,18,114,.18), 0 0 15px rgba(47,213,90,.25)'
+      card.style.borderColor = 'var(--green)'
+      card.style.transform = `perspective(1000px) translateY(-${LIFT_PX}px) scale3d(${SCALE}, ${SCALE}, ${SCALE})`
+    })
+
+    featuresGrid.addEventListener('mousemove', (e) => {
+      const card = e.target.closest('.feature-card')
+      if (!card) return
+      const rect = card.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+      const offsetX = (x - centerX) / centerX
+      const offsetY = (y - centerY) / centerY
+
+      card.style.setProperty('--mx', `${x}px`)
+      card.style.setProperty('--my', `${y}px`)
+
+      card.style.transition = 'transform .1s ease' // mais rápido durante o movimento
+      card.style.transform = `
+        perspective(1000px)
+        translateY(-${LIFT_PX}px)
+        rotateX(${(offsetY * INTENSITY).toFixed(2)}deg)
+        rotateY(${(offsetX * INTENSITY).toFixed(2)}deg)
+        scale3d(${SCALE}, ${SCALE}, ${SCALE})
+      `
+    })
+
+    featuresGrid.addEventListener('mouseout', (e) => {
+      const card = e.target.closest('.feature-card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      card.classList.remove('is-tilting')
+      card.style.transition = 'transform .5s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease, backdrop-filter .35s ease'
+      card.style.boxShadow = ''
+      card.style.borderColor = ''
+      card.style.transform = 'perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)'
+    })
+  })()
+
+  /* ── mesma animação de hover dos feature-card (tilt 3D + glass + glow
+     verde seguindo o mouse), agora nos .trilha-card da sessão "Suas
+     trilhas de desenvolvimento". A diferença: a setinha também vira
+     90° no hover, como dica de que o card é clicável — a rotação em
+     si já está toda no CSS (.trilha-card.is-tilting:not(.is-open)
+     .trilha-toggle-arrow), então aqui só ligamos/desligamos a classe
+     .is-tilting. ─────────────────────────────────────────────────── */
+  ;(function () {
+    const trilhaGrid = document.getElementById('trilhaGrid')
+    if (!trilhaGrid) return
+
+    const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (!supportsHover) return // touch: fica só o :active simples do CSS
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
+    const INTENSITY = 8      // graus máximos de rotação
+    const LIFT_PX    = 5     // sobe 5px ao entrar
+    const SCALE      = 1.02  // scale sutil, sem "tremer" o texto do card
+
+    trilhaGrid.addEventListener('mouseover', (e) => {
+      const card = e.target.closest('.trilha-card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      const rect = card.getBoundingClientRect()
+      card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+      card.style.setProperty('--my', `${e.clientY - rect.top}px`)
+      card.classList.add('is-tilting')
+      card.style.transition = 'transform .3s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease, backdrop-filter .35s ease'
+      card.style.boxShadow = '0 15px 30px rgba(15,18,114,.18), 0 0 15px rgba(47,213,90,.25)'
+      card.style.borderColor = 'var(--green)'
+      card.style.transform = `perspective(1000px) translateY(-${LIFT_PX}px) scale3d(${SCALE}, ${SCALE}, ${SCALE})`
+    })
+
+    trilhaGrid.addEventListener('mousemove', (e) => {
+      const card = e.target.closest('.trilha-card')
+      if (!card) return
+      const rect = card.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+      const offsetX = (x - centerX) / centerX
+      const offsetY = (y - centerY) / centerY
+
+      card.style.setProperty('--mx', `${x}px`)
+      card.style.setProperty('--my', `${y}px`)
+
+      card.style.transition = 'transform .1s ease' // mais rápido durante o movimento
+      card.style.transform = `
+        perspective(1000px)
+        translateY(-${LIFT_PX}px)
+        rotateX(${(offsetY * INTENSITY).toFixed(2)}deg)
+        rotateY(${(offsetX * INTENSITY).toFixed(2)}deg)
+        scale3d(${SCALE}, ${SCALE}, ${SCALE})
+      `
+    })
+
+    trilhaGrid.addEventListener('mouseout', (e) => {
+      const card = e.target.closest('.trilha-card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      card.classList.remove('is-tilting')
+      card.style.transition = 'transform .5s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease, backdrop-filter .35s ease'
+      card.style.boxShadow = ''
+      card.style.borderColor = ''
+      card.style.transform = 'perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)'
+    })
+  })()
+
+  /* ── abrir/fechar os módulos do trilha-card. Antes era um <details>
+     nativo; agora que o card também tem o tilt 3D (que escreve
+     "transform" via JS a cada frame de mousemove), um <details> real
+     brigaria com esse transform. Então a expansão passou a ser via
+     classe .is-open + o truque de grid-template-rows no CSS (mesma
+     animação usada no trilha-card do dashboard), com um listener de
+     clique/teclado aqui pra alternar essa classe. Cada card abre/fecha
+     de forma independente, do mesmo jeito que o <details> fazia. ── */
+  ;(function () {
+    const trilhaGrid = document.getElementById('trilhaGrid')
+    if (!trilhaGrid) return
+
+    function toggleCard(card) {
+      const summary = card.querySelector('.trilha-summary')
+      const isOpen = card.classList.toggle('is-open')
+      if (summary) summary.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
+    }
+
+    trilhaGrid.addEventListener('click', (e) => {
+      const summary = e.target.closest('.trilha-summary')
+      if (!summary) return
+      toggleCard(summary.closest('.trilha-card'))
+    })
+
+    // acessibilidade: Enter/Espaço no summary focado também alterna
+    trilhaGrid.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      const summary = e.target.closest('.trilha-summary')
+      if (!summary) return
+      e.preventDefault() // evita scroll da página no Espaço
+      toggleCard(summary.closest('.trilha-card'))
+    })
+  })()
+
+  /* ── TESTE: seleção de texto estilo "marca-texto" ─────────────────
+     A ::selection nativa foi comentada lá em cima (ver comentário perto
+     do topo do <style>) e trocada por transparent — quem pinta agora é
+     este script. Ele lê a seleção REAL do navegador (Ctrl+C continua
+     funcionando normal, isso aqui é só visual por cima) e desenha um
+     traço verde atrás do texto, com um pequeno atraso proposital antes
+     de "pintar" e uma transição de scaleX(0) → scaleX(1) da esquerda
+     pra direita, simulando o traço de uma caneta marca-texto.
+     Pra reverter: apague este bloco inteiro e descomente a
+     ::selection original lá em cima. ──────────────────────────────── */
+  ;(function () {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
+    const PAINT_DELAY = 40 // ms de atraso proposital antes do traço aparecer
+    const STROKE_STAGGER = 25 // ms entre cada linha, quando a seleção quebra em várias linhas
+
+    const layer = document.createElement('div')
+    layer.id = 'selectionInkLayer'
+    // z-index:5 — acima de todo o conteúdo normal das seções (que usa
+    // z-index:1 nos .wrap), mas abaixo do nav (40), menu (45/46) e
+    // modal de login (50), então nunca cobre a UI fixa.
+    // Ficar como ÚLTIMO filho do <body> (em vez do primeiro) é o que
+    // garante isso: antes, sendo o primeiro filho, o traço ficava
+    // "atrás" de qualquer seção com position:relative (praticamente
+    // todas, por causa dos círculos decorativos) — só a hero não tinha
+    // nada cobrindo por cima, por isso só ela funcionava.
+    layer.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:5;'
+    document.body.appendChild(layer)
+
+    let marks = []
+    let paintTimer = null
+
+    function clearMarks() {
+      marks.forEach(m => m.remove())
+      marks = []
+    }
+
+    function paintSelection() {
+      clearMarks()
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return
+      const range = sel.getRangeAt(0)
+      const rects = Array.from(range.getClientRects()).filter(r => r.width > 2 && r.height > 2)
+
+      rects.forEach((r, i) => {
+        const mark = document.createElement('span')
+        mark.style.cssText = `
+          position:fixed;
+          left:${r.left}px;
+          top:${r.top}px;
+          width:${r.width}px;
+          height:${r.height}px;
+          background:rgba(47,213,90,.38);
+          mix-blend-mode:multiply;
+          border-radius:2px;
+          transform-origin:left center;
+          transform:scaleX(0);
+          transition:transform .3s cubic-bezier(.16,1,.3,1);
+          transition-delay:${i * STROKE_STAGGER}ms;
+        `
+        layer.appendChild(mark)
+        marks.push(mark)
+      })
+
+      // reflow antes de setar o transform final, senão o navegador
+      // "funde" o estado inicial (scaleX(0)) com o final e não anima
+      requestAnimationFrame(() => {
+        marks.forEach(m => { m.style.transform = 'scaleX(1)' })
+      })
+    }
+
+    document.addEventListener('mouseup', () => {
+      clearTimeout(paintTimer)
+      paintTimer = setTimeout(paintSelection, PAINT_DELAY)
+    })
+
+    // seleção via teclado (Shift+setas, Ctrl+A etc.) também dispara,
+    // sem o delay do mouseup (já não tem o mesmo "gesto" de soltar o botão)
+    document.addEventListener('keyup', (e) => {
+      if (!e.shiftKey && e.key !== 'a') return
+      clearTimeout(paintTimer)
+      paintTimer = setTimeout(paintSelection, PAINT_DELAY)
+    })
+
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed) {
+        clearTimeout(paintTimer)
+        clearMarks()
+      }
+    })
+
+    // a seleção some ao rolar/redimensionar porque os retângulos são
+    // capturados em coordenadas de viewport (position:fixed) — em vez
+    // de recalcular a cada scroll, simplesmente limpa
+    window.addEventListener('scroll', clearMarks, true)
+    window.addEventListener('resize', clearMarks)
   })()
 </script>
 <script src="themeSwitch.js"></script>
