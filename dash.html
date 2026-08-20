@@ -24,7 +24,9 @@
     img { display: block; }
     ul { list-style: none; }
     ::-webkit-scrollbar { width: 0; }
-    ::selection { background: rgba(47,213,90,.3); color: var(--ink); }
+    /* ::selection nativa comentada — efeito de "marca-texto" via JS (ver script no fim do body) */
+    /* ::selection { background: rgba(47,213,90,.3); color: var(--ink); } */
+    ::selection { background: transparent; }
 
     * { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
     a, button, input, [tabindex] { outline: none; }
@@ -109,10 +111,13 @@
       background:transparent; color:var(--ink);
       font-weight:700; font-size:.8rem;
       border:2px solid var(--navy); border-radius:50px;
-      transition:background .2s, color .2s;
+      transition:background .2s, color .2s, border-color .2s, transform .15s;
       cursor:pointer;
     }
-    .btn-outline:hover { background:var(--navy); color:#fff; }
+    html.theme-dark .btn-outline { border-color:var(--border); }
+    @media (prefers-color-scheme: dark) { html.theme-auto .btn-outline { border-color:var(--border); } }
+    .btn-outline:hover { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .btn-outline:active { transform:scale(.96); }
     .btn-outline.full { width:100%; }
 
     /* ── nav ─────────────────────────────────────────── */
@@ -538,6 +543,13 @@
       </div>
       <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
+    <a href="perfil.html">
+      <div>
+        <p class="link-title">Perfil</p>
+        <p class="link-sub">Seus dados e certificados</p>
+      </div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
   </nav>
 
   <div class="menu-footer">
@@ -566,6 +578,10 @@
       <a href="index.html" class="btn-outline hide-mobile">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
         Início
+      </a>
+      <a href="perfil.html" class="btn-outline hide-mobile">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Perfil
       </a>
       <button class="hamburger" id="hamburger" aria-label="Menu">
         <span class="bar1"></span>
@@ -1029,6 +1045,92 @@
   hamburger.addEventListener('click', () => menuPanel.classList.contains('open') ? closeMenu() : openMenu())
   menuBackdrop.addEventListener('click', closeMenu)
   menuClose.addEventListener('click', closeMenu)
+
+  /* ── seleção de texto estilo "marca-texto" ─────────────────────────
+     A ::selection nativa foi trocada por transparent lá em cima — quem
+     pinta agora é este script. Ele lê a seleção REAL do navegador
+     (Ctrl+C continua funcionando normal, isso aqui é só visual por
+     cima) e desenha um traço verde atrás do texto, com um pequeno
+     atraso proposital antes de "pintar" e uma transição de
+     scaleX(0) → scaleX(1) da esquerda pra direita, simulando o traço
+     de uma caneta marca-texto.
+     Pra reverter: apague este bloco inteiro e descomente a
+     ::selection original lá em cima. ──────────────────────────────── */
+  ;(function () {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
+    const PAINT_DELAY = 40 // ms de atraso proposital antes do traço aparecer
+    const STROKE_STAGGER = 25 // ms entre cada linha, quando a seleção quebra em várias linhas
+
+    const layer = document.createElement('div')
+    layer.id = 'selectionInkLayer'
+    // z-index:5 — acima do conteúdo normal, mas abaixo do nav/menu/modal
+    layer.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:5;'
+    document.body.appendChild(layer)
+
+    let marks = []
+    let paintTimer = null
+
+    function clearMarks() {
+      marks.forEach(m => m.remove())
+      marks = []
+    }
+
+    function paintSelection() {
+      clearMarks()
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return
+      const range = sel.getRangeAt(0)
+      const rects = Array.from(range.getClientRects()).filter(r => r.width > 2 && r.height > 2)
+
+      rects.forEach((r, i) => {
+        const mark = document.createElement('span')
+        mark.style.cssText = `
+          position:fixed;
+          left:${r.left}px;
+          top:${r.top}px;
+          width:${r.width}px;
+          height:${r.height}px;
+          background:rgba(47,213,90,.38);
+          mix-blend-mode:multiply;
+          border-radius:2px;
+          transform-origin:left center;
+          transform:scaleX(0);
+          transition:transform .3s cubic-bezier(.16,1,.3,1);
+          transition-delay:${i * STROKE_STAGGER}ms;
+        `
+        layer.appendChild(mark)
+        marks.push(mark)
+      })
+
+      requestAnimationFrame(() => {
+        marks.forEach(m => { m.style.transform = 'scaleX(1)' })
+      })
+    }
+
+    document.addEventListener('mouseup', () => {
+      clearTimeout(paintTimer)
+      paintTimer = setTimeout(paintSelection, PAINT_DELAY)
+    })
+
+    document.addEventListener('keyup', (e) => {
+      if (!e.shiftKey && e.key !== 'a') return
+      clearTimeout(paintTimer)
+      paintTimer = setTimeout(paintSelection, PAINT_DELAY)
+    })
+
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed) {
+        clearTimeout(paintTimer)
+        clearMarks()
+      }
+    })
+
+    window.addEventListener('scroll', clearMarks, true)
+    window.addEventListener('resize', clearMarks)
+  })()
 </script>
 <script src="themeSwitch.js"></script>
 </body>
