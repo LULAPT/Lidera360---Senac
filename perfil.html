@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="theme-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu Perfil — Lidera360</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── reset ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color .35s ease, color .35s ease;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: 'Poppins', sans-serif; cursor: pointer; }
+    img { display: block; }
+    ul { list-style: none; }
+    ::-webkit-scrollbar { width: 0; }
+    /* ::selection nativa comentada — efeito de "marca-texto" via JS (ver script no fim do body) */
+    /* ::selection { background: rgba(47,213,90,.3); color: var(--ink); } */
+    ::selection { background: transparent; }
+
+    * { -webkit-tap-highlight-color: transparent; tap-highlight-color: transparent; }
+    a, button, input, textarea, [tabindex] { outline: none; }
+    a:focus-visible, button:focus-visible, input:focus-visible,
+    textarea:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--green);
+      outline-offset: 2px;
+    }
+
+    /* ── tokens ────────────────────────────────────── */
+    :root {
+      --navy:   #0f1272;
+      --navyd:  #090b52;
+      --green:  #2fd55a;
+      --greend: #22b847;
+      --orange: #f97316;
+      --bg:     #f5f6ff;
+      --white:  #ffffff;
+      --muted:  #6b7280;
+      --border: rgba(15,18,114,.14);
+      --ink:    var(--navy);
+    }
+    html.theme-dark {
+      --bg:     #12132b;
+      --white:  #1b1c3a;
+      --muted:  #9497c4;
+      --border: rgba(255,255,255,.14);
+      --navyd:  #05061c;
+      --ink:    #eef0ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto {
+        --bg:     #12132b;
+        --white:  #1b1c3a;
+        --muted:  #9497c4;
+        --border: rgba(255,255,255,.14);
+        --navyd:  #05061c;
+        --ink:    #eef0ff;
+      }
+    }
+
+    /* ── keyframes ─────────────────────────────────── */
+    @keyframes fade-in   { from{opacity:0} to{opacity:1} }
+    @keyframes fade-out  { from{opacity:1} to{opacity:0} }
+    @keyframes menuLinkIn {
+      from { opacity:0; transform:translateX(18px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+    @keyframes dashCardIn {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes popIn {
+      from { opacity:0; transform:scale(.85); }
+      to   { opacity:1; transform:scale(1); }
+    }
+
+    /* ── scroll reveal (idêntico ao do index.html) ─────
+       elementos com [data-reveal] começam invisíveis/deslocados e
+       ganham a classe .in-view ao entrarem na viewport (ver script
+       no fim do body). data-reveal-group cria stagger entre irmãos. */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1);
+      will-change: opacity, transform;
+    }
+    [data-reveal].in-view { opacity: 1; transform: translateY(0); }
+    [data-reveal="left"]  { transform: translateX(-48px); }
+    [data-reveal="left"].in-view  { transform: translateX(0); }
+    [data-reveal="right"] { transform: translateX(48px); }
+    [data-reveal="right"].in-view { transform: translateX(0); }
+    [data-reveal="scale"] { transform: scale(.9); }
+    [data-reveal="scale"].in-view { transform: scale(1); }
+    @media (prefers-reduced-motion: reduce) {
+      [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* ── layout helpers ────────────────────────────── */
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 0 2.5rem; }
+    @media(max-width:768px){ .wrap{ padding:0 1.25rem; } }
+    .hide-mobile { display:none; }
+    @media(min-width:769px){ .hide-mobile{ display:flex; } }
+
+    .circle { position:absolute; border-radius:50%; pointer-events:none; }
+
+    /* ── buttons ────────────────────────────────────── */
+    .btn-green {
+      display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+      padding:.75rem 1.75rem;
+      background:var(--green); color:#fff;
+      font-weight:700; font-size:.85rem;
+      border:none; border-radius:50px;
+      box-shadow:0 4px 20px rgba(47,213,90,.35);
+      transition:background .2s, transform .15s;
+      cursor:pointer;
+    }
+    .btn-green:hover { background:var(--greend); }
+    .btn-green:active { transform:scale(.96); }
+    .btn-green.full  { width:100%; }
+
+    .btn-outline {
+      display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+      padding:.7rem 1.5rem;
+      background:transparent; color:var(--ink);
+      font-weight:700; font-size:.8rem;
+      border:2px solid var(--navy); border-radius:50px;
+      transition:background .2s, color .2s, transform .15s;
+      cursor:pointer;
+    }
+    html.theme-dark .btn-outline { border-color:var(--border); }
+    @media (prefers-color-scheme: dark) { html.theme-auto .btn-outline { border-color:var(--border); } }
+    .btn-outline:hover { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .btn-outline:active { transform:scale(.96); }
+    .btn-outline.full { width:100%; }
+
+    .btn-icon {
+      width:42px; height:42px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      border:2px solid var(--border); background:transparent; color:var(--ink);
+      transition:border-color .2s, background .2s, transform .15s;
+      flex-shrink:0;
+    }
+    .btn-icon:hover { border-color:var(--navy); }
+    .btn-icon:active { transform:scale(.92); }
+
+    /* ── nav (igual ao dash.html) ─────────────────────── */
+    .nav {
+      position:fixed; top:0; left:0; right:0; z-index:40;
+      background:rgba(255,255,255,.95);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
+      transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+    }
+    html.theme-dark .nav { background: rgba(18,19,43,.85); }
+    @media (prefers-color-scheme: dark) { html.theme-auto .nav { background: rgba(18,19,43,.85); } }
+
+    .nav-inner { height:4rem; display:flex; align-items:center; justify-content:space-between; }
+    .logo { display:flex; align-items:center; gap:.5rem; }
+    .logo-text { font-weight:800; font-size:1.2rem; color:var(--ink); }
+    .logo-text span { color:var(--green); }
+    .logo-mark { flex-shrink:0; }
+    html.theme-dark svg [fill="#0f1272"] { fill: var(--ink); }
+    html.theme-dark svg [fill="#090b52"] { fill: #4b4f8f; }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto svg [fill="#0f1272"] { fill: var(--ink); }
+      html.theme-auto svg [fill="#090b52"] { fill: #4b4f8f; }
+    }
+
+    .nav-actions { display:flex; align-items:center; gap:.75rem; }
+
+    .hamburger {
+      display:flex; flex-direction:column; justify-content:center;
+      align-items:center; gap:5px;
+      width:40px; height:40px;
+      border:1.5px solid var(--border); border-radius:10px;
+      background:transparent;
+      transition:background .2s, border-color .2s;
+      flex-shrink:0;
+    }
+    .hamburger span {
+      display:block; width:16px; height:1.5px;
+      background:var(--navy); border-radius:2px;
+      transition:transform .25s, opacity .2s, background .2s;
+    }
+    html.theme-dark .hamburger span { background: var(--ink); }
+    html.theme-dark .hamburger { border-color: var(--border); }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .hamburger span { background: var(--ink); }
+      html.theme-auto .hamburger { border-color: var(--border); }
+    }
+    .hamburger.open { background:var(--bg); border-color:var(--green); }
+    .hamburger.open span { background:var(--green); }
+    .hamburger.open .bar1 { transform:rotate(45deg) translate(4.5px,4.5px); }
+    .hamburger.open .bar2 { opacity:0; }
+    .hamburger.open .bar3 { transform:rotate(-45deg) translate(4.5px,-4.5px); }
+
+    @media (max-width: 700px) {
+      .nav-actions .hide-mobile { display: none !important; }
+      .hamburger { display: flex !important; }
+    }
+
+    /* ── slide menu (igual ao dash.html) ──────────────── */
+    .menu-backdrop {
+      position:fixed; inset:0; z-index:45;
+      background:rgba(15, 18, 114, 0.192);
+      opacity:0; pointer-events:none;
+      transition:opacity .4s ease, backdrop-filter .4s ease, -webkit-backdrop-filter .4s ease;
+    }
+    .menu-backdrop.open {
+      opacity:1; pointer-events:auto;
+      backdrop-filter:blur(4px);
+      -webkit-backdrop-filter:blur(4px);
+    }
+    .menu-panel {
+      position:fixed; top:0; right:0; bottom:0; z-index:46;
+      width:min(360px,88vw);
+      background:var(--white);
+      border-left:2px solid var(--green);
+      transform:translateX(100%);
+      opacity:.6;
+      transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, box-shadow .4s ease,
+                 background-color .35s ease, color .35s ease, border-color .35s ease;
+      display:flex; flex-direction:column;
+      box-shadow:-8px 0 48px rgba(15,18,114,0);
+      overflow:hidden;
+      will-change:transform;
+    }
+    .menu-panel.open {
+      transform:translateX(0);
+      opacity:1;
+      box-shadow:-8px 0 48px rgba(15,18,114,.12);
+    }
+    .menu-panel.closing {
+      transition:transform .3s cubic-bezier(.7,0,.84,0), opacity .3s ease, box-shadow .3s ease;
+    }
+    .menu-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:1.25rem 1.5rem;
+      border-bottom:1px solid var(--border);
+      position:relative; z-index:1;
+    }
+    .menu-close {
+      width:36px; height:36px; border-radius:50%;
+      border:1.5px solid var(--border); background:transparent;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--ink); transition:border-color .2s;
+    }
+    .menu-close:hover { border-color:var(--ink); }
+    /* atalhos em destaque, estilo "quadradinho de app" (igual ao index.html) */
+    .menu-tiles {
+      display:flex; gap:.75rem; flex-wrap:wrap;
+      padding:1.25rem 1.5rem 0;
+      position:relative; z-index:1;
+    }
+    .menu-tile {
+      width:132px; height:112px;
+      background:var(--navyd);
+      border-radius:18px;
+      padding:.85rem;
+      display:flex; flex-direction:column; justify-content:space-between;
+      box-shadow:0 8px 20px rgba(0,0,0,.25);
+      transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .menu-tile:hover { transform:translateY(-2px); box-shadow:0 10px 26px rgba(0,0,0,.32); }
+    .menu-tile:active { transform:translateY(0) scale(.97); }
+    .menu-tile-icon {
+      width:32px; height:32px; border-radius:9px;
+      background:rgba(47,213,90,.18);
+      display:flex; align-items:center; justify-content:center;
+      color:var(--green);
+    }
+    .menu-tile-label { font-size:.78rem; font-weight:600; line-height:1.25; color:#fff; }
+
+    .menu-nav { flex:1; display:flex; flex-direction:column; padding:1.5rem; gap:.25rem; position:relative; z-index:1; }
+    .menu-nav a {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.875rem 1rem; border-radius:12px;
+      transition:background .15s;
+      opacity:0;
+      animation:menuLinkIn .5s cubic-bezier(.16,1,.3,1) both;
+    }
+    .menu-panel.open .menu-nav a:nth-child(1) { animation-delay:.10s; }
+    .menu-panel.open .menu-nav a:nth-child(2) { animation-delay:.16s; }
+    .menu-panel:not(.open) .menu-nav a { animation:none; opacity:0; }
+    .menu-nav a:hover { background:var(--bg); }
+    .menu-nav .link-title { font-weight:700; font-size:1rem; color:var(--ink); }
+    .menu-nav .link-sub   { font-size:.72rem; color:var(--muted); margin-top:2px; }
+    .menu-nav .arrow      { color:var(--green); flex-shrink:0; transition:transform .2s; }
+    .menu-nav a:hover .arrow { transform:translateX(4px); }
+    .menu-footer {
+      padding:1.5rem;
+      border-top:1px solid var(--border);
+      display:flex; flex-direction:column; gap:.75rem;
+      position:relative; z-index:1;
+    }
+    .menu-note { font-size:.7rem; text-align:center; color:var(--muted); }
+
+    /* ── seções gerais / títulos ──────────────────────── */
+    .section-eyebrow { font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:.25rem; }
+    .section-title { font-size:clamp(1.1rem,2.4vw,1.4rem); font-weight:800; line-height:1.2; }
+
+    .card {
+      background:var(--white); border:1.5px solid var(--border);
+      border-radius:20px; padding:1.75rem;
+      transform-style: preserve-3d;
+      will-change: transform;
+      /* o transform do hover é escrito diretamente pelo JS a cada
+         evento de mouse — aqui só definimos a transição pra quando o
+         JS NÃO estiver mexendo (ex: :focus-within pelo teclado) */
+      transition:box-shadow .3s ease, border-color .3s ease,
+                 background-color .35s ease, transform .5s cubic-bezier(.16,1,.3,1);
+    }
+    .card + .card { margin-top:1.5rem; }
+    .card:hover { box-shadow:0 8px 32px rgba(15,18,114,.08); }
+    /* fallback só de teclado: sem JS de mousemove rolando, ainda
+       precisa "vir pra frente" com transform simples via CSS */
+    .card:focus-within {
+      box-shadow:0 8px 32px rgba(15,18,114,.1);
+      border-color:var(--green);
+    }
+    .card:focus-within:not(.is-tilting) {
+      transform: perspective(1000px) translateY(-4px) scale3d(1.02,1.02,1.02);
+    }
+
+    /* ── capa + avatar ─────────────────────────────────── */
+    .profile-hero { position:relative; padding:5.5rem 0 0; }
+    @media(min-width:769px){ .profile-hero{ padding:6.5rem 0 0; } }
+
+    .cover {
+      position:relative; overflow:hidden;
+      height:150px; border-radius:24px;
+      background:linear-gradient(120deg, var(--navy), var(--navyd) 55%, var(--green) 130%);
+      box-shadow:0 8px 28px rgba(15,18,114,.18);
+    }
+    @media(min-width:769px){ .cover{ height:210px; } }
+    .cover .circle:nth-child(1) { width:220px; height:220px; background:rgba(47,213,90,.22); top:-90px; right:-40px; }
+    .cover .circle:nth-child(2) { width:140px; height:140px; background:rgba(255,255,255,.08); bottom:-60px; left:10%; }
+    .cover-edit {
+      position:absolute; right:1rem; bottom:1rem;
+      width:38px; height:38px; border-radius:50%;
+      background:rgba(0,0,0,.35); backdrop-filter:blur(4px);
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; border:1.5px solid rgba(255,255,255,.4);
+      transition:background .2s, transform .15s;
+    }
+    .cover-edit:hover { background:rgba(0,0,0,.55); }
+    .cover-edit:active { transform:scale(.9); }
+
+    .profile-id {
+      display:flex; align-items:flex-end; gap:1.25rem;
+      margin-top:-52px; padding:0 .5rem;
+      position:relative; z-index:2;
+      flex-wrap:wrap;
+    }
+    @media(min-width:769px){ .profile-id{ margin-top:-64px; } }
+
+    /* avatar-lg é apenas o "quadro" posicionado (sem overflow:hidden) —
+       assim o status-dot pode ficar sobre a borda do círculo sem ser
+       cortado. Quem recorta a foto em círculo é o .avatar-lg-photo,
+       um wrapper interno com overflow:hidden só nele. */
+    .avatar-lg {
+      width:104px; height:104px; flex-shrink:0;
+      position:relative; cursor:pointer;
+    }
+    @media(min-width:769px){ .avatar-lg{ width:132px; height:132px; } }
+    .avatar-lg-photo {
+      position:absolute; inset:0; border-radius:50%; overflow:hidden;
+      border:4px solid var(--bg);
+      background:linear-gradient(135deg, var(--green), var(--navy));
+      background-size:cover; background-position:center;
+      color:#fff; font-weight:800; font-size:1.4rem;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 8px 20px rgba(15,18,114,.25);
+    }
+    .avatar-lg-overlay {
+      position:absolute; inset:0; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(9,11,82,0); opacity:0;
+      transition:opacity .25s ease, background-color .25s ease;
+    }
+    .avatar-lg:hover .avatar-lg-overlay { opacity:1; background:rgba(9,11,82,.45); }
+    .avatar-lg-overlay svg { width:26px; height:26px; }
+    .status-dot {
+      position:absolute; bottom:8px; right:8px; z-index:2;
+      width:18px; height:18px; border-radius:50%;
+      background:var(--green); border:3px solid var(--bg);
+      box-shadow:0 2px 6px rgba(15,18,114,.25);
+      pointer-events:none;
+    }
+    @media(min-width:769px){ .status-dot{ width:22px; height:22px; bottom:10px; right:10px; } }
+
+    .profile-name-block { flex:1; min-width:200px; padding-bottom:.35rem; }
+    .profile-name { font-size:clamp(1.3rem,3vw,1.85rem); font-weight:800; line-height:1.15; display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; color:#fff; }
+    html.theme-dark .profile-name { color:var(--ink); }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .profile-name { color:var(--ink); }
+    }
+    .verified-badge { color:var(--green); flex-shrink:0; }
+    .profile-headline { font-size:.9rem; color:var(--muted); margin-top:.3rem; }
+    .profile-meta { display:flex; flex-wrap:wrap; gap:1rem; margin-top:.55rem; font-size:.78rem; color:var(--muted); }
+    .profile-meta span { display:inline-flex; align-items:center; gap:.35rem; }
+    .profile-meta svg { width:14px; height:14px; flex-shrink:0; }
+    .profile-meta .conexoes { color:var(--green); font-weight:700; }
+
+    .profile-actions { display:flex; align-items:center; gap:.6rem; padding-bottom:.35rem; margin-left:auto; }
+
+    /* ── faixa de estatísticas ─────────────────────────── */
+    .stats-bar {
+      display:grid; grid-template-columns:1fr 1fr;
+      border:2px solid var(--border);
+      border-radius:16px; overflow:hidden;
+      margin-top:1.75rem;
+      gap:1px; background:var(--border);
+    }
+    @media(min-width:769px){ .stats-bar{ grid-template-columns:repeat(4,1fr); } }
+    .stat-cell { background:var(--white); padding:1.1rem 1.35rem; transition:background-color .35s ease; }
+    .stat-val  { font-size:clamp(1.3rem,3vw,1.7rem); font-weight:800; color:var(--green); line-height:1; }
+    .stat-lbl  { font-size:.7rem; color:var(--muted); margin-top:4px; }
+
+    .profile-body { padding:2.25rem 0 5rem; display:flex; flex-direction:column; gap:1.5rem; }
+
+    .card-title { font-size:1rem; font-weight:800; margin-bottom:.9rem; display:flex; align-items:center; gap:.5rem; }
+    .card-title svg { width:18px; height:18px; color:var(--green); flex-shrink:0; }
+    .about-text { font-size:.86rem; line-height:1.75; color:var(--muted); }
+    .about-text strong { color:var(--ink); }
+
+    /* ── badges de trilhas concluídas ──────────────────── */
+    .badge-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:1rem; }
+    .badge-item {
+      display:flex; flex-direction:column; align-items:center; text-align:center; gap:.6rem;
+      padding:1.1rem .75rem; border:1.5px solid var(--border); border-radius:16px;
+      opacity:0; animation:dashCardIn .5s ease both;
+      transition:border-color .25s ease, transform .25s ease, box-shadow .25s ease;
+    }
+    .badge-item:hover { border-color:var(--green); transform:translateY(-4px); box-shadow:0 10px 24px rgba(15,18,114,.1); }
+    .badge-icon {
+      width:52px; height:52px; border-radius:50%;
+      background:rgba(47,213,90,.12); color:var(--green);
+      display:flex; align-items:center; justify-content:center;
+      position:relative;
+    }
+    .badge-icon svg { width:24px; height:24px; }
+    .badge-check {
+      position:absolute; bottom:-3px; right:-3px;
+      width:20px; height:20px; border-radius:50%;
+      background:var(--green); border:2.5px solid var(--white);
+      display:flex; align-items:center; justify-content:center; color:#fff;
+    }
+    .badge-check svg { width:10px; height:10px; }
+    .badge-name { font-size:.8rem; font-weight:700; }
+    .badge-sub { font-size:.68rem; color:var(--muted); }
+
+    /* ── skills ─────────────────────────────────────────── */
+    .skills-wrap { display:flex; flex-wrap:wrap; gap:.6rem; }
+    .skill-tag {
+      display:inline-flex; align-items:center; gap:.45rem;
+      padding:.55rem 1rem; border-radius:50px;
+      background:var(--bg); border:1.5px solid var(--border);
+      font-size:.78rem; font-weight:600; color:var(--ink);
+      opacity:0; animation:popIn .4s ease both;
+      transition:border-color .2s, transform .15s;
+    }
+    .skill-tag:hover { border-color:var(--green); transform:translateY(-2px); }
+    .skill-tag .endorse { font-size:.68rem; color:var(--green); font-weight:800; }
+
+    /* ── experiência ────────────────────────────────────── */
+    .exp-item { display:flex; gap:1rem; padding:1rem 0; }
+    .exp-item + .exp-item { border-top:1px solid var(--border); }
+    .exp-logo {
+      width:48px; height:48px; border-radius:12px; flex-shrink:0;
+      background:linear-gradient(135deg, var(--navy), var(--navyd));
+      display:flex; align-items:center; justify-content:center;
+      color:var(--green); font-weight:800; font-size:.95rem;
+    }
+    .exp-role { font-weight:700; font-size:.88rem; }
+    .exp-company { font-size:.8rem; color:var(--muted); margin-top:1px; }
+    .exp-period { font-size:.7rem; color:var(--muted); margin-top:3px; }
+    .exp-desc { font-size:.78rem; color:var(--muted); line-height:1.6; margin-top:.5rem; }
+
+    /* ── feed de atividade ─────────────────────────────── */
+    .feed-eyebrow {
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.32rem .75rem .32rem .5rem; border-radius:20px;
+      background:rgba(47,213,90,.1); color:var(--green);
+      font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    }
+    .feed-eyebrow-icon {
+      width:20px; height:20px; border-radius:50%; flex-shrink:0;
+      background:var(--green); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .feed-eyebrow-icon svg { width:12px; height:12px; }
+    .post-card { opacity:0; animation:dashCardIn .5s ease both; }
+    .post-head { display:flex; align-items:center; gap:.75rem; margin-bottom:.9rem; }
+    .post-avatar {
+      width:42px; height:42px; border-radius:50%; flex-shrink:0;
+      background:linear-gradient(135deg, var(--green), var(--navy));
+      background-size:cover; background-position:center;
+    }
+    .post-author { font-size:.85rem; font-weight:700; }
+    .post-time { font-size:.7rem; color:var(--muted); }
+    .post-text { font-size:.85rem; line-height:1.65; color:var(--ink); margin-bottom:1rem; }
+    .post-certificate {
+      position:relative; overflow:hidden;
+      display:flex; align-items:center; gap:.85rem;
+      padding:1rem; border-radius:14px;
+      background:rgba(47,213,90,.08); border:1.5px dashed var(--green);
+      margin-bottom:1rem;
+    }
+    /* brilho de vidro: uma faixa diagonal que varre da esquerda pra
+       direita apenas quando o post-card é hovered, uma vez por hover */
+    .post-certificate::after {
+      content:''; position:absolute; top:0; left:-60%;
+      width:45%; height:100%;
+      background:linear-gradient(115deg, transparent 0%, rgba(255,255,255,0) 30%,
+                  rgba(255,255,255,.65) 50%, rgba(255,255,255,0) 70%, transparent 100%);
+      transform:skewX(-20deg);
+      pointer-events:none;
+    }
+    .post-card:hover .post-certificate::after { animation:certShine 1s ease; }
+    @keyframes certShine {
+      from { left:-60%; }
+      to   { left:140%; }
+    }
+    .post-certificate .cert-icon {
+      width:42px; height:42px; border-radius:12px; flex-shrink:0;
+      background:var(--green); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .post-certificate .cert-icon svg { width:22px; height:22px; }
+    .post-certificate .cert-name { font-weight:700; font-size:.82rem; }
+    .post-certificate .cert-sub { font-size:.7rem; color:var(--muted); }
+
+    .post-actions { display:flex; gap:1.5rem; padding-top:.85rem; border-top:1px solid var(--border); }
+    .post-action {
+      display:flex; align-items:center; gap:.45rem;
+      font-size:.76rem; font-weight:600; color:var(--muted);
+      background:none; border:none; padding:.3rem .4rem; border-radius:8px;
+      transition:color .2s, background .2s, transform .1s;
+    }
+    .post-action svg { width:16px; height:16px; transition:transform .2s; }
+    .post-action:hover { color:var(--ink); background:var(--bg); }
+    .post-action:active { transform:scale(.94); }
+    .post-action.liked { color:var(--green); }
+    .post-action.liked svg { fill:var(--green); stroke:var(--green); transform:scale(1.1); }
+
+    /* ── rodapé simples ────────────────────────────────── */
+    footer { background:var(--navyd); color:rgba(255,255,255,.55); padding:2rem 0; transition:background-color .35s ease; }
+    .footer-inner { max-width:1000px; margin:0 auto; padding:0 2.5rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; }
+    @media(max-width:768px){ .footer-inner{ padding:0 1.25rem; } }
+    .footer-copy { font-size:.72rem; color:rgba(255,255,255,.35); }
+    .footer-back { font-size:.78rem; font-weight:600; color:rgba(255,255,255,.7); display:inline-flex; align-items:center; gap:.4rem; transition:color .2s; }
+    .footer-back:hover { color:#fff; }
+
+    /* ── floating theme-toggle button (injetado por themeSwitch.js) ── */
+    .theme-toggle { top: auto !important; bottom: 20px !important; right: 20px !important; z-index: 41 !important; }
+    @media (max-width: 480px) {
+      .theme-toggle { width: 48px !important; height: 48px !important; bottom: 16px !important; right: 16px !important; }
+      .theme-toggle .sun-icon, .theme-toggle .moon-icon { width: 24px !important; height: 24px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Slide menu backdrop ────────────────────────── -->
+<div class="menu-backdrop" id="menuBackdrop"></div>
+
+<!-- ── Slide menu panel ─────────────────────────────── -->
+<div class="menu-panel" id="menuPanel">
+  <div class="circle" style="width:200px;height:200px;background:rgba(47,213,90,.07);top:-60px;right:-60px;"></div>
+  <div class="circle" style="width:120px;height:120px;background:rgba(249,115,22,.07);bottom:40px;left:-40px;"></div>
+
+  <div class="menu-header">
+    <div class="logo">
+      <svg class="logo-mark" width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,4 44,40 4,40" fill="#0f1272"/>
+        <polygon points="14,40 24,22 34,40" fill="#090b52" opacity=".7"/>
+        <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
+      </svg>
+      <span class="logo-text">Lidera<span>360</span></span>
+    </div>
+    <button class="menu-close" id="menuClose" aria-label="Fechar">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="menu-tiles">
+    <a href="dash.html" class="menu-tile">
+      <div class="menu-tile-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="4" opacity=".3"/>
+          <path d="M7 15l3.2-3.6 2.3 2 4.5-5.4"/>
+          <circle cx="17" cy="8" r="1.1" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <span class="menu-tile-label">Dashboard de performance</span>
+    </a>
+    <a href="index.html" class="menu-tile">
+      <div class="menu-tile-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8"/>
+          <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/>
+        </svg>
+      </div>
+      <span class="menu-tile-label">Página inicial</span>
+    </a>
+  </div>
+
+  <nav class="menu-nav">
+    <a href="dash.html">
+      <div>
+        <p class="link-title">Dashboard</p>
+        <p class="link-sub">Suas trilhas e progresso</p>
+      </div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="index.html">
+      <div>
+        <p class="link-title">Início</p>
+        <p class="link-sub">Voltar para a página inicial</p>
+      </div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </nav>
+
+  <div class="menu-footer">
+    <button class="btn-green full" onclick="window.location='dash.html'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>
+      Ir para o Dashboard
+    </button>
+    <p class="menu-note">Você está no seu Perfil pessoal</p>
+  </div>
+</div>
+
+<!-- ── Nav ────────────────────────────────────────── -->
+<header class="nav">
+  <div class="wrap nav-inner" style="max-width:1280px;">
+    <a href="index.html" class="logo">
+      <svg class="logo-mark" width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,4 44,40 4,40" fill="#0f1272"/>
+        <polygon points="14,40 24,22 34,40" fill="#090b52" opacity=".7"/>
+        <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
+      </svg>
+      <span class="logo-text">Lidera<span>360</span></span>
+    </a>
+
+    <div class="nav-actions">
+      <a href="index.html" class="btn-outline hide-mobile">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+        Início
+      </a>
+      <a href="dash.html" class="btn-outline hide-mobile">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>
+        Dashboard
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span class="bar1"></span>
+        <span class="bar2"></span>
+        <span class="bar3"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ── Capa + identidade do perfil ───────────────────── -->
+<section class="profile-hero">
+  <div class="wrap" data-reveal="scale">
+    <div class="cover">
+      <div class="circle"></div>
+      <div class="circle"></div>
+      <button class="cover-edit" aria-label="Editar capa">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
+    </div>
+
+    <div class="profile-id">
+      <div class="avatar-lg" id="profileAvatar">
+        <div class="avatar-lg-photo" style="background-image:url('/src/img/chorro_avatar.jpg');">
+          <span class="avatar-lg-overlay">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
+        </div>
+        <span class="status-dot" title="Online"></span>
+      </div>
+
+      <div class="profile-name-block">
+        <p class="profile-name">
+          Dharlan
+          <svg class="verified-badge" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 2.1 3.1-.6 1 3 2.9 1.3-.6 3.1L23 14l-2.2 2.1.6 3.1-2.9 1.3-1 3-3.1-.6L12 25l-2.4-2.1-3.1.6-1-3-2.9-1.3.6-3.1L1 12l2.2-2.1-.6-3.1 2.9-1.3 1-3 3.1.6L12 2z" transform="scale(.9) translate(1,-1)"/><path d="M8.5 12.2l2.4 2.4 4.6-4.9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </p>
+        <p class="profile-headline">Auxiliar de Vendedor · Narciso Enxovais &nbsp;•&nbsp; Trilha de Vendas — 95% concluída</p>
+        <div class="profile-meta">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Abreu e Lima, PE</span>
+          <span class="conexoes">128 conexões</span>
+        </div>
+      </div>
+
+      <div class="profile-actions">
+        <button class="btn-green">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <span class="hide-mobile">Editar perfil</span>
+        </button>
+        <button class="btn-icon" aria-label="Compartilhar">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- resumo rápido -->
+    <div class="stats-bar">
+      <div class="stat-cell"><p class="stat-val" id="statConexoes">0</p><p class="stat-lbl">Conexões</p></div>
+      <div class="stat-cell"><p class="stat-val" id="statConcluidas">0</p><p class="stat-lbl">Trilhas concluídas</p></div>
+      <div class="stat-cell"><p class="stat-val" id="statCertificados">0</p><p class="stat-lbl">Certificados</p></div>
+      <div class="stat-cell"><p class="stat-val" id="statHoras">0h</p><p class="stat-lbl">Horas estudadas</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Corpo do perfil ────────────────────────────────── -->
+<section class="profile-body">
+  <div class="wrap">
+
+    <!-- Sobre -->
+    <div class="card" data-reveal>
+      <p class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Sobre
+      </p>
+      <p class="about-text">
+        Atuo como <strong>Auxiliar de Vendedor</strong> na Narciso Enxovais, sempre buscando evoluir no atendimento e na gestão do dia a dia da loja.
+        Estou usando a <strong>Lidera360</strong> para me desenvolver em vendas, produtividade e tecnologia, no meu próprio ritmo — já com uma trilha
+        concluída e outras em andamento. Gosto de compartilhar o que aprendo com o time e trocar ideias sobre como aplicar isso na prática.
+      </p>
+    </div>
+
+    <!-- Trilhas concluídas / certificações -->
+    <div class="card" data-reveal>
+      <p class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        Trilhas e certificações
+      </p>
+      <div class="badge-grid" id="badgeGrid"></div>
+    </div>
+
+    <!-- Habilidades -->
+    <div class="card" data-reveal>
+      <p class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Habilidades
+      </p>
+      <div class="skills-wrap" id="skillsWrap"></div>
+    </div>
+
+    <!-- Experiência -->
+    <div class="card" data-reveal>
+      <p class="card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>
+        Experiência
+      </p>
+      <div class="exp-item">
+        <div class="exp-logo">NE</div>
+        <div>
+          <p class="exp-role">Auxiliar de Vendedor</p>
+          <p class="exp-company">Narciso Enxovais</p>
+          <p class="exp-period">Mar 2024 — atual · 2 anos e 5 meses</p>
+          <p class="exp-desc">Atendimento ao cliente, organização de estoque e apoio nas metas comerciais da loja.</p>
+        </div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-logo">L360</div>
+        <div>
+          <p class="exp-role">Aluno — Trilha de Vendas</p>
+          <p class="exp-company">Lidera360</p>
+          <p class="exp-period">Jun 2025 — atual</p>
+          <p class="exp-desc">Desenvolvimento contínuo em técnicas de negociação, CRM, gestão financeira e relacionamento com o cliente.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Atividade recente (feed estilo rede social) -->
+    <div data-reveal style="padding-top:1.5rem;">
+      <span class="feed-eyebrow" style="margin-bottom:.75rem;">
+        <span class="feed-eyebrow-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </span>
+        Feed
+      </span>
+      <h2 class="section-title" style="margin-bottom:1.1rem;">Atividade recente</h2>
+    </div>
+
+    <div class="card post-card" style="animation-delay:.05s;">
+      <div class="post-head">
+        <div class="post-avatar" style="background-image:url('/src/img/chorro_avatar.jpg');"></div>
+        <div>
+          <p class="post-author">Dharlan Silva</p>
+          <p class="post-time">há 2 dias · 🌐 Lidera360</p>
+        </div>
+      </div>
+      <p class="post-text">Concluí a trilha de <strong>Produtividade</strong> essa semana! O módulo de Deep Work mudou totalmente como eu organizo meu dia na loja. 🙌</p>
+      <div class="post-certificate">
+        <div class="cert-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div>
+        <div>
+          <p class="cert-name">Certificado — Trilha de Produtividade</p>
+          <p class="cert-sub">Emitido pela Lidera360</p>
+        </div>
+      </div>
+      <div class="post-actions">
+        <button class="post-action like-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          <span class="like-count">24</span>
+        </button>
+        <button class="post-action" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          6
+        </button>
+        <button class="post-action" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+          Compartilhar
+        </button>
+      </div>
+    </div>
+
+    <div class="card post-card" style="animation-delay:.12s;">
+      <div class="post-head">
+        <div class="post-avatar" style="background-image:url('/src/img/chorro_avatar.jpg');"></div>
+        <div>
+          <p class="post-author">Dharlan Silva</p>
+          <p class="post-time">há 1 semana · 🌐 Lidera360</p>
+        </div>
+      </div>
+      <p class="post-text">Reta final da trilha de <strong>Vendas</strong> — faltando só o módulo de CDC pra fechar 100%. Quem mais tá quase lá? 🚀</p>
+      <div class="post-actions">
+        <button class="post-action like-btn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          <span class="like-count">17</span>
+        </button>
+        <button class="post-action" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          3
+        </button>
+        <button class="post-action" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+          Compartilhar
+        </button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Footer simples ────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <p class="footer-copy">© 2026 Lidera360. Todos os direitos reservados.</p>
+    <a href="dash.html" class="footer-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Voltar para o Dashboard
+    </a>
+  </div>
+</footer>
+
+<script>
+  /* ── dados: trilhas concluídas/certificações + habilidades ──────── */
+  const BADGES = [
+    { nome:'Produtividade', sub:'Concluída · Ago 2026', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' },
+    { nome:'Tecnologia', sub:'Concluída · Jun 2026', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>' },
+    { nome:'Vendas', sub:'95% concluída', icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>' },
+  ]
+
+  const SKILLS = [
+    { nome:'Atendimento ao Cliente', end:18 },
+    { nome:'Negociação', end:12 },
+    { nome:'Excel', end:9 },
+    { nome:'Gestão de Tempo', end:14 },
+    { nome:'CRM', end:6 },
+    { nome:'Trabalho em Equipe', end:21 },
+  ]
+
+  function renderPerfil() {
+    const badgeGrid = document.getElementById('badgeGrid')
+    badgeGrid.innerHTML = BADGES.map((b, i) => `
+      <div class="badge-item" style="animation-delay:${i * 0.08}s">
+        <div class="badge-icon">
+          ${b.icon}
+          <span class="badge-check"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+        <p class="badge-name">${b.nome}</p>
+        <p class="badge-sub">${b.sub}</p>
+      </div>
+    `).join('')
+
+    const skillsWrap = document.getElementById('skillsWrap')
+    skillsWrap.innerHTML = SKILLS.map((s, i) => `
+      <span class="skill-tag" style="animation-delay:${i * 0.06}s">
+        ${s.nome} <span class="endorse">+${s.end}</span>
+      </span>
+    `).join('')
+
+    // estatísticas do topo, com contagem animada simples
+    animarNumero('statConexoes', 128)
+    animarNumero('statConcluidas', 2)
+    animarNumero('statCertificados', 2)
+    animarNumero('statHoras', 46, 'h')
+  }
+
+  function animarNumero(id, alvo, sufixo = '') {
+    const el = document.getElementById(id)
+    if (!el) return
+    const duracao = 900
+    const inicio = performance.now()
+    function passo(agora) {
+      const p = Math.min(1, (agora - inicio) / duracao)
+      const valor = Math.round(alvo * (1 - Math.pow(1 - p, 3))) // ease-out cubic
+      el.textContent = valor + sufixo
+      if (p < 1) requestAnimationFrame(passo)
+    }
+    requestAnimationFrame(passo)
+  }
+
+  renderPerfil()
+
+  /* ── libera a animação de entrada dos badges/skills (mesmo fix
+     usado no dash.html pro trilha-card) ────────────────────────── */
+  document.addEventListener('animationend', (e) => {
+    if (e.animationName === 'dashCardIn' || e.animationName === 'popIn') {
+      e.target.style.animation = 'none'
+      e.target.style.opacity = '1'
+    }
+  }, true)
+
+  /* ── curtir posts do feed ─────────────────────────────────────── */
+  document.querySelectorAll('.like-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const countEl = btn.querySelector('.like-count')
+      let count = parseInt(countEl.textContent, 10)
+      const liked = btn.classList.toggle('liked')
+      countEl.textContent = liked ? count + 1 : count - 1
+    })
+  })
+
+  /* ── scroll reveal: idêntico ao index.html ───────────────────── */
+  ;(function () {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    const observer = ('IntersectionObserver' in window) ? new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view')
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' }) : null
+
+    function initScrollReveal(root) {
+      root = root || document
+      const groupCounts = {}
+      root.querySelectorAll('[data-reveal]').forEach(el => {
+        if (el.classList.contains('in-view')) return
+        const group = el.dataset.revealGroup
+        if (group) {
+          groupCounts[group] = groupCounts[group] || 0
+          el.style.transitionDelay = (groupCounts[group] * 90) + 'ms'
+          groupCounts[group]++
+        }
+        if (prefersReducedMotion || !observer) {
+          el.classList.add('in-view')
+        } else {
+          observer.observe(el)
+        }
+      })
+    }
+
+    document.addEventListener('DOMContentLoaded', () => initScrollReveal())
+    if (document.readyState !== 'loading') initScrollReveal()
+  })()
+
+  /* ── hover com tilt 3D nos cards, seguindo o mouse (mesmo mecanismo
+     do trilha-card do dash.html, só que sem o blur de fundo) —
+     delegação de evento no body, funciona pra qualquer .card ──────── */
+  const supportsHoverPerfil = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+
+  if (supportsHoverPerfil) {
+    const INTENSITY = 8      // graus máximos de rotação
+    const LIFT_PX    = 5     // sobe 5px ao entrar
+    const SCALE      = 1.02  // scale sutil
+
+    document.body.addEventListener('mouseover', (e) => {
+      const card = e.target.closest('.card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      card.classList.add('is-tilting')
+      card.style.transition = 'transform .3s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease'
+      card.style.boxShadow = '0 15px 30px rgba(15,18,114,.14), 0 0 15px rgba(47,213,90,.2)'
+      card.style.borderColor = 'var(--green)'
+      card.style.transform = `perspective(1000px) translateY(-${LIFT_PX}px) scale3d(${SCALE}, ${SCALE}, ${SCALE})`
+    })
+
+    document.body.addEventListener('mousemove', (e) => {
+      const card = e.target.closest('.card')
+      if (!card || !card.classList.contains('is-tilting')) return
+      const rect = card.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      const offsetX = (x - rect.width / 2) / (rect.width / 2)
+      const offsetY = (y - rect.height / 2) / (rect.height / 2)
+
+      card.style.transition = 'transform .1s ease' // mais rápido durante o movimento
+      card.style.transform = `
+        perspective(1000px)
+        translateY(-${LIFT_PX}px)
+        rotateX(${(offsetY * INTENSITY).toFixed(2)}deg)
+        rotateY(${(offsetX * INTENSITY).toFixed(2)}deg)
+        scale3d(${SCALE}, ${SCALE}, ${SCALE})
+      `
+    })
+
+    document.body.addEventListener('mouseout', (e) => {
+      const card = e.target.closest('.card')
+      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
+      card.classList.remove('is-tilting')
+      card.style.transition = 'transform .5s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease'
+      card.style.boxShadow = ''
+      card.style.borderColor = ''
+      card.style.transform = 'perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)'
+    })
+  }
+
+  /* ── menu (mesmo mecanismo do dash.html) ─────────────────────── */
+  const hamburger    = document.getElementById('hamburger')
+  const menuBackdrop = document.getElementById('menuBackdrop')
+  const menuPanel    = document.getElementById('menuPanel')
+  const menuClose    = document.getElementById('menuClose')
+
+  function openMenu() {
+    clearTimeout(menuPanel._closeTimer)
+    menuPanel.classList.remove('closing')
+    hamburger.classList.add('open')
+    menuBackdrop.classList.add('open')
+    menuPanel.classList.add('open')
+    document.body.style.overflow = 'hidden'
+  }
+  function closeMenu() {
+    hamburger.classList.remove('open')
+    menuBackdrop.classList.remove('open')
+    menuPanel.classList.add('closing')
+    menuPanel.classList.remove('open')
+    document.body.style.overflow = ''
+    clearTimeout(menuPanel._closeTimer)
+    menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 320)
+  }
+
+  hamburger.addEventListener('click', () => menuPanel.classList.contains('open') ? closeMenu() : openMenu())
+  menuBackdrop.addEventListener('click', closeMenu)
+  menuClose.addEventListener('click', closeMenu)
+
+  /* ── seleção de texto estilo "marca-texto" ─────────────────────────
+     A ::selection nativa foi trocada por transparent lá em cima — quem
+     pinta agora é este script. Ele lê a seleção REAL do navegador
+     (Ctrl+C continua funcionando normal, isso aqui é só visual por
+     cima) e desenha um traço verde atrás do texto, com um pequeno
+     atraso proposital antes de "pintar" e uma transição de
+     scaleX(0) → scaleX(1) da esquerda pra direita, simulando o traço
+     de uma caneta marca-texto.
+     Pra reverter: apague este bloco inteiro e descomente a
+     ::selection original lá em cima. ──────────────────────────────── */
+  ;(function () {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+
+    const PAINT_DELAY = 40 // ms de atraso proposital antes do traço aparecer
+    const STROKE_STAGGER = 25 // ms entre cada linha, quando a seleção quebra em várias linhas
+
+    const layer = document.createElement('div')
+    layer.id = 'selectionInkLayer'
+    // z-index:5 — acima do conteúdo normal, mas abaixo do nav/menu/modal
+    layer.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:5;'
+    document.body.appendChild(layer)
+
+    let marks = []
+    let paintTimer = null
+
+    function clearMarks() {
+      marks.forEach(m => m.remove())
+      marks = []
+    }
+
+    function paintSelection() {
+      clearMarks()
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) return
+      const range = sel.getRangeAt(0)
+      const rects = Array.from(range.getClientRects()).filter(r => r.width > 2 && r.height > 2)
+
+      rects.forEach((r, i) => {
+        const mark = document.createElement('span')
+        mark.style.cssText = `
+          position:fixed;
+          left:${r.left}px;
+          top:${r.top}px;
+          width:${r.width}px;
+          height:${r.height}px;
+          background:rgba(47,213,90,.38);
+          mix-blend-mode:multiply;
+          border-radius:2px;
+          transform-origin:left center;
+          transform:scaleX(0);
+          transition:transform .3s cubic-bezier(.16,1,.3,1);
+          transition-delay:${i * STROKE_STAGGER}ms;
+        `
+        layer.appendChild(mark)
+        marks.push(mark)
+      })
+
+      requestAnimationFrame(() => {
+        marks.forEach(m => { m.style.transform = 'scaleX(1)' })
+      })
+    }
+
+    document.addEventListener('mouseup', () => {
+      clearTimeout(paintTimer)
+      paintTimer = setTimeout(paintSelection, PAINT_DELAY)
+    })
+
+    document.addEventListener('keyup', (e) => {
+      if (!e.shiftKey && e.key !== 'a') return
+      clearTimeout(paintTimer)
+      paintTimer = setTimeout(paintSelection, PAINT_DELAY)
+    })
+
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed) {
+        clearTimeout(paintTimer)
+        clearMarks()
+      }
+    })
+
+    window.addEventListener('scroll', clearMarks, true)
+    window.addEventListener('resize', clearMarks)
+  })()
+</script>
+<script src="themeSwitch.js"></script>
+</body>
+</html>
