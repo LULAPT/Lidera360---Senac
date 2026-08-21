@@ -11,6 +11,8 @@
     /* ── reset ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
+    /* compensa a altura do header fixo (4rem) ao pular pra uma section via #âncora */
+    section[id] { scroll-margin-top: 5rem; }
     body {
       font-family: 'Poppins', system-ui, sans-serif;
       background: var(--bg);
@@ -808,18 +810,55 @@
 
     /* ── pricing ─────────────────────────────────────── */
     .pricing-section { background:var(--bg); padding:5rem 0; position:relative; overflow:hidden; }
-    .plans-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
+    .plans-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
 
     .plan-card {
+      --mx:50%; --my:50%; /* posição do glow, atualizada via JS no mousemove */
       background:var(--white); border:1.5px solid var(--border);
       border-radius:24px; padding:2rem;
       display:flex; flex-direction:column;
       position:relative; overflow:hidden;
+      transition:box-shadow .3s ease, border-color .3s ease, background-color .3s ease;
+      will-change:transform;
     }
     .plan-card.highlight {
       background:var(--navy);
       border-color:var(--green);
       box-shadow:0 16px 48px rgba(15,18,114,.25);
+    }
+    /* glow verde que segue o mouse, atrás do conteúdo do card (mesma
+       lógica do .feature-card / .trilha-card) */
+    .plan-card::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:inherit;
+      background:radial-gradient(220px circle at var(--mx) var(--my), rgba(47,213,90,.10), transparent 70%);
+      opacity:0;
+      transition:opacity .35s ease;
+      pointer-events:none;
+    }
+    /* no card highlight (fundo navy escuro) o glow precisa ser mais
+       forte pra aparecer sobre o escuro */
+    .plan-card.highlight::before {
+      background:radial-gradient(260px circle at var(--mx) var(--my), rgba(47,213,90,.22), transparent 70%);
+    }
+    /* "vidro": fundo translúcido + blur, só liga junto com o glow no hover
+       (no highlight não aplicamos o glass, pra não perder o fundo navy) */
+    .plan-card:not(.highlight).is-tilting {
+      background-color:var(--glass-bg);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+    }
+    .plan-card.is-tilting::before { opacity:1; }
+    /* fallback simples pra quem não tem hover fino (ex.: touch) —
+       em telas com mouse de verdade o JS assume o transform (tilt 3D
+       que segue o cursor, ver script no fim do body) */
+    @media (hover:hover) and (pointer:fine) {
+      .plan-card:not(.is-tilting) { transition:box-shadow .3s ease, border-color .3s ease, transform .3s ease, background-color .3s ease; }
+    }
+    @media not all and (hover:hover) {
+      .plan-card:active { box-shadow:0 8px 32px rgba(15,18,114,.1); transform:translateY(-3px); }
     }
     .plan-badge {
       position:absolute; top:1rem; right:1rem;
@@ -848,6 +887,52 @@
     .plan-card:not(.highlight) .plan-features li { color:#374151; }
 
     .check-icon { flex-shrink:0; }
+
+    /* ── plan-toggle: caixa com pill deslizante, 2 planos por caixa
+       (ex.: Micro/Pequena) que alternam de conteúdo com transição
+       suave, sem pular de tamanho — ver script no fim do body ── */
+    .plan-toggle {
+      position:relative;
+      display:flex;
+      background:var(--bg);
+      border:1px solid var(--border);
+      border-radius:50px;
+      padding:4px;
+      margin-bottom:1.5rem;
+    }
+    .plan-toggle-thumb {
+      position:absolute; top:4px; left:4px; bottom:4px;
+      width:calc(50% - 4px);
+      background:var(--green);
+      border-radius:50px;
+      box-shadow:0 4px 14px rgba(47,213,90,.35);
+      transition:transform .4s cubic-bezier(.65,0,.35,1);
+      z-index:0;
+    }
+    .plan-toggle-btn {
+      position:relative; z-index:1;
+      flex:1;
+      border:none; background:transparent;
+      padding:.6rem .5rem;
+      font-size:.78rem; font-weight:600;
+      border-radius:50px;
+      color:var(--muted);
+      transition:color .3s ease;
+    }
+    .plan-toggle-btn.is-active { color:#fff; }
+
+    .plan-toggle-panes { position:relative; display:grid; }
+    .plan-toggle-pane {
+      grid-row:1; grid-column:1;
+      display:flex; flex-direction:column;
+      opacity:0; pointer-events:none;
+      transform:translateX(16px);
+      transition:opacity .4s cubic-bezier(.16,1,.3,1), transform .4s cubic-bezier(.16,1,.3,1);
+    }
+    .plan-toggle-pane.is-active { opacity:1; pointer-events:auto; transform:translateX(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .plan-toggle-thumb, .plan-toggle-pane { transition:none !important; }
+    }
 
     /* ── cta banner ──────────────────────────────────── */
     .cta-section {
@@ -1034,24 +1119,24 @@ html.theme-dark .hamburger {
   </div>
 
   <nav class="menu-nav">
-    <a href="#cursos">
+    <a href="#home">
+      <div><p class="link-title">Home</p><p class="link-sub">Página inicial</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#trilhas">
       <div><p class="link-title">Trilhas</p><p class="link-sub">Confira os nossos cursos</p></div>
       <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
-    <a href="#planos">
-      <div><p class="link-title">Planos</p><p class="link-sub">Starter, Business, Enterprise</p></div>
-      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <a href="#">
-      <div><p class="link-title">Para Empresas</p><p class="link-sub">Soluções corporativas</p></div>
-      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
-    <a href="#">
-      <div><p class="link-title">Blog</p><p class="link-sub">Artigos sobre liderança e T&D</p></div>
+    <a href="#plataforma">
+      <div><p class="link-title">Plataforma</p><p class="link-sub">Soluções corporativas</p></div>
       <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
     <a href="#sobre">
       <div><p class="link-title">Sobre nós</p><p class="link-sub">Conheça o Lidera360</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="#planos">
+      <div><p class="link-title">Planos</p><p class="link-sub">Valores por porte de empresa</p></div>
       <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </nav>
@@ -1125,10 +1210,11 @@ html.theme-dark .hamburger {
     </a>
 
     <nav class="nav-links hide-mobile">
-      <a href="#cursos">Dashboard</a>
+      <a href="#home">Home</a>
+      <a href="#trilhas">Trilhas</a>
+      <a href="#plataforma">Plataforma</a>
+      <a href="#sobre">Sobre nós</a>
       <a href="#planos">Planos</a>
-      <a href="#">Para Empresas</a>
-      <a href="#">Blog</a>
     </nav>
 
     <div class="nav-actions">
@@ -1144,7 +1230,7 @@ html.theme-dark .hamburger {
 </header>
 
 <!-- ── Hero ───────────────────────────────────────── -->
-<section class="hero">
+<section class="hero" id="home">
   <!-- bg decoration -->
   <div class="circle" style="width:500px;height:500px;background:rgba(15,18,114,.04);top:-100px;right:-150px;"></div>
   <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.08);bottom:-50px;left:-80px;"></div>
@@ -1199,7 +1285,7 @@ html.theme-dark .hamburger {
 </section>
 
 <!-- ── Dashboard (trilhas) ──────────────────────────── -->
-<section class="courses-section" id="cursos">
+<section class="courses-section" id="trilhas">
   <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.05);top:-80px;right:-80px;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
     <div class="section-head" data-reveal>
@@ -1222,7 +1308,7 @@ html.theme-dark .hamburger {
 </section>
 
 <!-- ── Features ───────────────────────────────────── -->
-<section class="features-section">
+<section class="features-section" id="plataforma">
   <div class="circle" style="width:250px;height:250px;background:rgba(15,18,114,.04);bottom:-60px;left:-60px;"></div>
   <div class="circle" style="width:14px;height:14px;background:#f97316;top:60px;right:15%;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
@@ -1294,6 +1380,104 @@ html.theme-dark .hamburger {
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ── Planos e valores ─────────────────────────────── -->
+<section class="pricing-section" id="planos">
+  <div class="circle" style="width:260px;height:260px;background:rgba(15,18,114,.04);top:-70px;left:-70px;"></div>
+  <div class="circle" style="width:16px;height:16px;background:#2fd55a;bottom:70px;right:12%;"></div>
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="section-center" data-reveal>
+      <p class="section-eyebrow">Planos</p>
+      <h2 class="section-title">Um plano por empresa,<br><span class="accent">sem custo por colaborador</span></h2>
+      <p style="max-width:560px;margin:1rem auto 0;font-size:.9rem;line-height:1.7;color:var(--muted);">
+        A contratação é única, feita pela empresa — o valor muda de acordo com o número de
+        funcionários, e todos os colaboradores cadastrados têm acesso completo à plataforma.
+      </p>
+    </div>
+
+    <div class="plans-grid" data-reveal-group="plans">
+      <!-- caixa 1: microempresa ⇄ pequena empresa -->
+      <div class="plan-card plan-toggle-card" data-reveal>
+        <div class="plan-toggle">
+          <button type="button" class="plan-toggle-btn is-active" data-target="0">Micro</button>
+          <button type="button" class="plan-toggle-btn" data-target="1">Pequena</button>
+          <span class="plan-toggle-thumb"></span>
+        </div>
+        <div class="plan-toggle-panes">
+          <div class="plan-toggle-pane is-active" data-pane="0">
+            <p class="plan-desc">Microempresa — até 19 funcionários</p>
+            <div class="plan-price-row"><span class="plan-price">R$ 199,90</span><span class="plan-per">/mês</span></div>
+            <ul class="plan-features">
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todas as trilhas do Lidera360</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Painel do gestor e relatórios</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Certificação por módulo concluído</li>
+            </ul>
+            <a href="#" class="btn-outline full">Assinar plano</a>
+          </div>
+          <div class="plan-toggle-pane" data-pane="1">
+            <p class="plan-desc">Pequena Empresa — 20 a 49 funcionários</p>
+            <div class="plan-price-row"><span class="plan-price">R$ 399,90</span><span class="plan-per">/mês</span></div>
+            <ul class="plan-features">
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todas as trilhas do Lidera360</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Painel do gestor e relatórios</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Certificação por módulo concluído</li>
+            </ul>
+            <a href="#" class="btn-outline full">Assinar plano</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- caixa 2: média empresa ⇄ grande empresa -->
+      <div class="plan-card plan-toggle-card" data-reveal>
+        <div class="plan-toggle">
+          <button type="button" class="plan-toggle-btn is-active" data-target="0">Média</button>
+          <button type="button" class="plan-toggle-btn" data-target="1">Grande</button>
+          <span class="plan-toggle-thumb"></span>
+        </div>
+        <div class="plan-toggle-panes">
+          <div class="plan-toggle-pane is-active" data-pane="0">
+            <p class="plan-desc">Média Empresa — 50 a 249 funcionários</p>
+            <div class="plan-price-row"><span class="plan-price">R$ 899,90</span><span class="plan-per">/mês</span></div>
+            <ul class="plan-features">
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todas as trilhas do Lidera360</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Painel do gestor e relatórios</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Certificação por módulo concluído</li>
+            </ul>
+            <a href="#" class="btn-outline full">Assinar plano</a>
+          </div>
+          <div class="plan-toggle-pane" data-pane="1">
+            <p class="plan-desc">Grande Empresa — 250 a 999 funcionários</p>
+            <div class="plan-price-row"><span class="plan-price">R$ 1.799,90</span><span class="plan-per">/mês</span></div>
+            <ul class="plan-features">
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todas as trilhas do Lidera360</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Painel do gestor e relatórios</li>
+              <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Certificação por módulo concluído</li>
+            </ul>
+            <a href="#" class="btn-outline full">Assinar plano</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- enterprise / personalizado — permanece separado e destacado -->
+      <div class="plan-card highlight" data-reveal>
+        <span class="plan-badge">Personalizado</span>
+        <p class="plan-name">Enterprise</p>
+        <p class="plan-desc">1.000 funcionários ou mais</p>
+        <div class="plan-price-row"><span class="plan-price">A partir de R$ 3.500,00</span><span class="plan-per">/mês</span></div>
+        <ul class="plan-features">
+          <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todas as trilhas do Lidera360</li>
+          <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Painel do gestor e relatórios</li>
+          <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Valor sob medida conforme o nº de colaboradores</li>
+        </ul>
+        <a href="#" class="btn-green full">Falar com vendas</a>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:.78rem;color:var(--muted);margin-top:2rem;" data-reveal>
+      Uma única assinatura por empresa — sem contrato ou cobrança individual por colaborador cadastrado.
+    </p>
   </div>
 </section>
 
@@ -1695,7 +1879,38 @@ html.theme-dark .hamburger {
   menuBackdrop.addEventListener('click', closeMenu)
   menuClose.addEventListener('click', closeMenu)
   menuLoginBtn.addEventListener('click', () => { closeMenu(); openLogin() })
-  menuPanel.querySelectorAll('.menu-nav a').forEach(a => a.addEventListener('click', closeMenu))
+
+  /* ── clique nos links do menu mobile (#home, #trilhas etc.) ──────
+     Antes disso a rolagem ficava por conta do navegador (âncora nativa
+     + scroll-margin-top no CSS), calculada no exato momento do clique
+     — só que nesse momento o body ainda está com overflow:hidden (o
+     menu tá aberto) e a barra de endereço do celular ainda não
+     "assentou" depois de o menu fechar. O resultado: o navegador mira
+     numa posição baseada numa altura de viewport que muda logo em
+     seguida, e a rolagem acaba um pouco mais curta — a section chega
+     um pouco acima do que deveria, escondida atrás do header fixo.
+     Agora a gente intercepta o clique, fecha o menu, espera um
+     instante pro layout assentar e só então calcula e rola manualmente
+     até a posição certa (altura real do header + a mesma folga do
+     scroll-margin-top do CSS). ─────────────────────────────────────── */
+  const NAV_GAP = 16 // mesma folga usada no scroll-margin-top (5rem - 4rem de header)
+
+  menuPanel.querySelectorAll('.menu-nav a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      const targetId = a.getAttribute('href')
+      const target = targetId.length > 1 ? document.querySelector(targetId) : null
+      if (!target) { closeMenu(); return }
+
+      e.preventDefault()
+      closeMenu()
+
+      setTimeout(() => {
+        const navHeight = document.querySelector('.nav').offsetHeight
+        const y = target.getBoundingClientRect().top + window.scrollY - navHeight - NAV_GAP
+        window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' })
+      }, 60)
+    })
+  })
 
   /* ── login modal ──────────────────────────────────── */
   const loginModal = document.getElementById('loginModal')
@@ -1821,12 +2036,14 @@ html.theme-dark .hamburger {
     }
   })()
 
-  /* ── tilt 3D nos feature-card (sessão "Por que escolher"), seguindo
-     o mouse — mesmo mecanismo dos .trilha-card do dashboard, só que
-     sem o overlay de blur de fundo (aqui é só a animação do card). ── */
-  ;(function () {
-    const featuresGrid = document.querySelector('.features-grid')
-    if (!featuresGrid) return
+  /* ── tilt 3D seguindo o mouse (perspective + rotateX/Y + glow verde
+     que acompanha o cursor via --mx/--my), reaproveitado em qualquer
+     grid de cards do site — feature-card, trilha-card e agora também
+     plan-card (planos), pra manter a mesma "assinatura" de hover em
+     todo canto em vez de três blocos de código duplicados. Função
+     única, chamada uma vez por grid. ────────────────────────────── */
+  function initTiltHover(gridEl, cardSelector) {
+    if (!gridEl) return
 
     const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
     if (!supportsHover) return // touch: fica só o :active simples do CSS
@@ -1838,8 +2055,8 @@ html.theme-dark .hamburger {
     const LIFT_PX    = 5     // sobe 5px ao entrar
     const SCALE      = 1.02  // scale sutil, sem "tremer" o texto do card
 
-    featuresGrid.addEventListener('mouseover', (e) => {
-      const card = e.target.closest('.feature-card')
+    gridEl.addEventListener('mouseover', (e) => {
+      const card = e.target.closest(cardSelector)
       if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
       const rect = card.getBoundingClientRect()
       card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
@@ -1851,8 +2068,8 @@ html.theme-dark .hamburger {
       card.style.transform = `perspective(1000px) translateY(-${LIFT_PX}px) scale3d(${SCALE}, ${SCALE}, ${SCALE})`
     })
 
-    featuresGrid.addEventListener('mousemove', (e) => {
-      const card = e.target.closest('.feature-card')
+    gridEl.addEventListener('mousemove', (e) => {
+      const card = e.target.closest(cardSelector)
       if (!card) return
       const rect = card.getBoundingClientRect()
       const x = e.clientX - rect.left
@@ -1875,8 +2092,8 @@ html.theme-dark .hamburger {
       `
     })
 
-    featuresGrid.addEventListener('mouseout', (e) => {
-      const card = e.target.closest('.feature-card')
+    gridEl.addEventListener('mouseout', (e) => {
+      const card = e.target.closest(cardSelector)
       if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
       card.classList.remove('is-tilting')
       card.style.transition = 'transform .5s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease, backdrop-filter .35s ease'
@@ -1884,76 +2101,11 @@ html.theme-dark .hamburger {
       card.style.borderColor = ''
       card.style.transform = 'perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)'
     })
-  })()
+  }
 
-  /* ── mesma animação de hover dos feature-card (tilt 3D + glass + glow
-     verde seguindo o mouse), agora nos .trilha-card da sessão "Suas
-     trilhas de desenvolvimento". A diferença: a setinha também vira
-     90° no hover, como dica de que o card é clicável — a rotação em
-     si já está toda no CSS (.trilha-card.is-tilting:not(.is-open)
-     .trilha-toggle-arrow), então aqui só ligamos/desligamos a classe
-     .is-tilting. ─────────────────────────────────────────────────── */
-  ;(function () {
-    const trilhaGrid = document.getElementById('trilhaGrid')
-    if (!trilhaGrid) return
-
-    const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches
-    if (!supportsHover) return // touch: fica só o :active simples do CSS
-
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReducedMotion) return
-
-    const INTENSITY = 8      // graus máximos de rotação
-    const LIFT_PX    = 5     // sobe 5px ao entrar
-    const SCALE      = 1.02  // scale sutil, sem "tremer" o texto do card
-
-    trilhaGrid.addEventListener('mouseover', (e) => {
-      const card = e.target.closest('.trilha-card')
-      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
-      const rect = card.getBoundingClientRect()
-      card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
-      card.style.setProperty('--my', `${e.clientY - rect.top}px`)
-      card.classList.add('is-tilting')
-      card.style.transition = 'transform .3s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease, backdrop-filter .35s ease'
-      card.style.boxShadow = '0 15px 30px rgba(15,18,114,.18), 0 0 15px rgba(47,213,90,.25)'
-      card.style.borderColor = 'var(--green)'
-      card.style.transform = `perspective(1000px) translateY(-${LIFT_PX}px) scale3d(${SCALE}, ${SCALE}, ${SCALE})`
-    })
-
-    trilhaGrid.addEventListener('mousemove', (e) => {
-      const card = e.target.closest('.trilha-card')
-      if (!card) return
-      const rect = card.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      const centerX = rect.width / 2
-      const centerY = rect.height / 2
-      const offsetX = (x - centerX) / centerX
-      const offsetY = (y - centerY) / centerY
-
-      card.style.setProperty('--mx', `${x}px`)
-      card.style.setProperty('--my', `${y}px`)
-
-      card.style.transition = 'transform .1s ease' // mais rápido durante o movimento
-      card.style.transform = `
-        perspective(1000px)
-        translateY(-${LIFT_PX}px)
-        rotateX(${(offsetY * INTENSITY).toFixed(2)}deg)
-        rotateY(${(offsetX * INTENSITY).toFixed(2)}deg)
-        scale3d(${SCALE}, ${SCALE}, ${SCALE})
-      `
-    })
-
-    trilhaGrid.addEventListener('mouseout', (e) => {
-      const card = e.target.closest('.trilha-card')
-      if (!card || (e.relatedTarget && card.contains(e.relatedTarget))) return
-      card.classList.remove('is-tilting')
-      card.style.transition = 'transform .5s ease, box-shadow .3s ease, border-color .3s ease, background-color .35s ease, backdrop-filter .35s ease'
-      card.style.boxShadow = ''
-      card.style.borderColor = ''
-      card.style.transform = 'perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)'
-    })
-  })()
+  initTiltHover(document.querySelector('.features-grid'), '.feature-card')
+  initTiltHover(document.getElementById('trilhaGrid'), '.trilha-card')
+  initTiltHover(document.querySelector('.plans-grid'), '.plan-card')
 
   /* ── abrir/fechar os módulos do trilha-card. Antes era um <details>
      nativo; agora que o card também tem o tilt 3D (que escreve
@@ -2087,6 +2239,54 @@ html.theme-dark .hamburger {
     // de recalcular a cada scroll, simplesmente limpa
     window.addEventListener('scroll', clearMarks, true)
     window.addEventListener('resize', clearMarks)
+  })()
+
+  /* ── planos: toggle deslizante dentro da mesma caixa ─────────────
+     cada .plan-toggle-card tem 2 botões + 2 panes. Clicar troca o
+     conteúdo com crossfade + slide horizontal (a pane que entra vem
+     do lado pro qual o usuário "andou" no toggle, a que sai vai pro
+     lado oposto), e a pill verde desliza atrás do botão ativo. ──── */
+  ;(function () {
+    document.querySelectorAll('.plan-toggle-card').forEach((card) => {
+      const thumb = card.querySelector('.plan-toggle-thumb')
+      const btns  = Array.from(card.querySelectorAll('.plan-toggle-btn'))
+      const panes = Array.from(card.querySelectorAll('.plan-toggle-pane'))
+      let current = btns.findIndex(b => b.classList.contains('is-active'))
+      if (current < 0) current = 0
+
+      function goTo(index) {
+        if (index === current || !panes[index]) return
+        const dir = index > current ? 1 : -1
+        const oldPane = panes[current]
+        const newPane = panes[index]
+
+        // posiciona a pane que vai entrar do lado certo, SEM transição,
+        // antes de animar — senão ela "viaja" a tela toda pra entrar
+        newPane.style.transition = 'none'
+        newPane.style.transform = `translateX(${dir * 16}px)`
+        newPane.style.opacity = '0'
+        // eslint-disable-next-line no-unused-expressions
+        newPane.offsetHeight // força reflow pra aplicar o estilo acima antes da transição
+        newPane.style.transition = ''
+
+        oldPane.classList.remove('is-active')
+        oldPane.style.transform = `translateX(${-dir * 16}px)`
+        oldPane.style.opacity = '0'
+
+        newPane.classList.add('is-active')
+        requestAnimationFrame(() => {
+          newPane.style.transform = 'translateX(0)'
+          newPane.style.opacity = '1'
+        })
+
+        btns.forEach((b, i) => b.classList.toggle('is-active', i === index))
+        thumb.style.transform = `translateX(${index * 100}%)`
+
+        current = index
+      }
+
+      btns.forEach((btn, i) => btn.addEventListener('click', () => goTo(i)))
+    })
   })()
 </script>
 <script src="themeSwitch.js"></script>
