@@ -531,8 +531,34 @@
     .trilha-module.done .module-num {
       background:var(--green); border-color:var(--green); color:#fff;
     }
-    .trilha-module.done span:last-child { color:var(--ink); }
-    .trilha-module:not(.done) span:last-child { color:var(--muted); }
+    .trilha-module.done .module-text { color:var(--ink); }
+    .trilha-module:not(.done) .module-text { color:var(--muted); }
+
+    /* módulo agora é clicável: abre o conteúdo real daquela trilha
+       (modal com vídeo + principais conteúdos). A setinha verde fica
+       escondida e só aparece (piscando) no hover, pra deixar claro que
+       dá pra abrir aquele módulo especificamente. */
+    .trilha-module {
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .trilha-module .module-text { flex:1; min-width:0; }
+    .trilha-module:hover { background:rgba(47,213,90,.14); }
+    .trilha-module.done:hover { background:rgba(47,213,90,.18); }
+    .trilha-module:focus-visible { outline:2px solid var(--green); outline-offset:2px; }
+
+    .module-open-arrow {
+      flex-shrink:0; color:var(--green);
+      display:flex; align-items:center; justify-content:center;
+      opacity:0; transform:translateX(-4px);
+      transition:opacity .2s ease, transform .2s ease;
+    }
+    .trilha-module:hover .module-open-arrow,
+    .trilha-module:focus-visible .module-open-arrow {
+      opacity:1; transform:translateX(0);
+      animation:arrowBlink 1.1s ease-in-out infinite;
+    }
+    @keyframes arrowBlink { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
 
     /* ── rodapé simples ────────────────────────────────── */
     footer { background:var(--navyd); color:rgba(255,255,255,.55); padding:2rem 0; transition:background-color .35s ease; }
@@ -540,6 +566,116 @@
     .footer-copy { font-size:.72rem; color:rgba(255,255,255,.35); }
     .footer-back { font-size:.78rem; font-weight:600; color:rgba(255,255,255,.7); display:inline-flex; align-items:center; gap:.4rem; transition:color .2s; }
     .footer-back:hover { color:#fff; }
+
+    /* ── modal de conteúdo do módulo (abre ao clicar num item de
+       trilha-module dentro do card) — reaproveita o mesmo padrão do
+       modal de login (modal-wrap/modal-box), só que maior e com
+       scroll interno, já que o conteúdo (vídeo + lista) é mais alto ── */
+    .modal-wrap {
+      position:fixed; inset:0; z-index:50;
+      display:flex; align-items:center; justify-content:center;
+      padding:1rem;
+      background:rgba(15,18,114,.35);
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+    }
+    .modal-wrap.entering { animation:fade-in .25s ease; }
+    .modal-wrap.leaving  { animation:fade-out .25s ease forwards; }
+
+    .modal-box {
+      width:100%; max-width:22rem;
+      background:var(--white); border-radius:24px;
+      padding:2.5rem 2rem;
+      position:relative;
+      box-shadow:0 24px 64px rgba(15,18,114,.2);
+      overflow:hidden;
+      border:2px solid var(--border);
+    }
+    .modal-box.entering { animation:modal-in  .3s  cubic-bezier(.34,1.56,.64,1) both; }
+    .modal-box.leaving  { animation:modal-out .22s cubic-bezier(.4,0,1,1)       forwards; }
+
+    .modal-close {
+      position:absolute; top:1rem; right:1.25rem; z-index:2;
+      font-size:1.2rem; line-height:1;
+      color:#9ca3af; background:none; border:none;
+      transition:color .2s;
+    }
+    .modal-close:hover { color:var(--ink); }
+
+    .module-modal-box {
+      max-width:640px;
+      max-height:88vh; overflow-y:auto;
+      padding:0 0 2rem;
+    }
+    /* pop-up ao abrir / pop-down (o inverso) ao fechar — mais "vivo"
+       que o modal-in/modal-out genérico usado no modal de login */
+    @keyframes modulePopIn {
+      0%   { opacity:0; transform:scale(.72) translateY(36px); }
+      100% { opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes modulePopOut {
+      0%   { opacity:1; transform:scale(1) translateY(0); }
+      30%  { transform:scale(1.03) translateY(-4px); }
+      100% { opacity:0; transform:scale(.7) translateY(36px); }
+    }
+    .module-modal-box.entering { animation:modulePopIn  .38s cubic-bezier(.34,1.56,.64,1) both; }
+    .module-modal-box.leaving  { animation:modulePopOut .24s cubic-bezier(.4,0,1,1)       forwards; }
+    .module-modal-box .modal-close {
+      top:.85rem; right:.85rem;
+      width:32px; height:32px; border-radius:50%;
+      background:rgba(9,11,82,.45); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+      backdrop-filter:blur(4px);
+    }
+    .module-modal-box .modal-close:hover { background:rgba(9,11,82,.65); color:#fff; }
+
+    /* div de vídeo — só o placeholder por enquanto, com o ícone de
+       play/pause centralizado. Fica acima de todo o texto do módulo. */
+    .module-video-placeholder {
+      width:100%; aspect-ratio:16/9;
+      background:linear-gradient(135deg, var(--navy), var(--navyd));
+      border-radius:24px 24px 0 0;
+      display:flex; align-items:center; justify-content:center;
+      position:relative; overflow:hidden;
+      margin-bottom:1.75rem;
+    }
+    .module-video-placeholder::before,
+    .module-video-placeholder::after {
+      content:''; position:absolute; border-radius:50%; pointer-events:none;
+    }
+    .module-video-placeholder::before { width:180px; height:180px; background:rgba(47,213,90,.12); top:-60px; right:-40px; }
+    .module-video-placeholder::after  { width:130px; height:130px; background:rgba(255,255,255,.05); bottom:-50px; left:-30px; }
+
+    .module-video-toggle {
+      width:64px; height:64px; border-radius:50%;
+      background:rgba(255,255,255,.14);
+      border:2px solid rgba(255,255,255,.55);
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; position:relative; z-index:1;
+      transition:background .2s ease, transform .15s ease, border-color .2s ease;
+    }
+    .module-video-toggle:hover  { background:rgba(255,255,255,.24); border-color:#fff; }
+    .module-video-toggle:active { transform:scale(.92); }
+    .module-video-toggle svg { width:24px; height:24px; }
+    .module-video-toggle .icon-pause { display:none; }
+    .module-video-toggle.is-playing .icon-play  { display:none; }
+    .module-video-toggle.is-playing .icon-pause { display:block; }
+
+    .module-modal-inner { padding:0 2rem; }
+    .module-modal-eyebrow { font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--green); margin-bottom:.4rem; }
+    .module-modal-title { font-size:1.4rem; font-weight:800; line-height:1.25; margin-bottom:.35rem; }
+    .module-modal-sub { font-size:.8rem; color:var(--muted); margin-bottom:1.5rem; }
+
+    .module-modal-label { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink); margin-bottom:.9rem; }
+    .module-content-list { display:flex; flex-direction:column; gap:.55rem; }
+    .module-content-item { display:flex; align-items:flex-start; gap:.65rem; font-size:.85rem; line-height:1.5; color:var(--ink); }
+    .module-content-item .item-dot {
+      width:20px; height:20px; border-radius:50%; margin-top:1px;
+      background:rgba(47,213,90,.12); color:var(--green);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .module-content-item .item-dot svg { width:10px; height:10px; }
 
     /* ── floating theme-toggle button (injetado por themeSwitch.js) ── */
     .theme-toggle {
@@ -706,6 +842,32 @@
   </div>
 </footer>
 
+<!-- ── Modal de conteúdo do módulo ─────────────────────
+     Abre ao clicar num módulo dentro de qualquer trilha-card.
+     O vídeo ainda é só um placeholder (div + ícone play/pause central);
+     o conteúdo (principais tópicos) vem do objeto TRILHAS no JS. ── -->
+<div class="modal-wrap module-modal-wrap" id="moduleModal" style="display:none">
+  <div class="modal-box module-modal-box" id="moduleModalBox">
+    <button class="modal-close" id="moduleModalClose" aria-label="Fechar">✕</button>
+
+    <div class="module-video-placeholder">
+      <button class="module-video-toggle" id="moduleVideoToggle" aria-label="Reproduzir vídeo">
+        <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+      </button>
+    </div>
+
+    <div class="module-modal-inner">
+      <p class="module-modal-eyebrow" id="moduleModalEyebrow">Trilha</p>
+      <h2 class="module-modal-title" id="moduleModalTitle">Módulo</h2>
+      <p class="module-modal-sub" id="moduleModalSub"></p>
+
+      <p class="module-modal-label">Principais conteúdos</p>
+      <div class="module-content-list" id="moduleContentList"></div>
+    </div>
+  </div>
+</div>
+
 <script>
   /* ── typing effect: escreve só a saudação, cursor fica piscando no
      final (adaptado do typing.js — aqui sem o loop de apagar/trocar
@@ -727,7 +889,10 @@
     typeWriter()
   })()
 
-  /* ── dados: mesmas trilhas/módulos do catálogo no index ─────────── */
+  /* ── dados: mesmas trilhas/módulos do catálogo no index. Cada módulo
+     agora carrega também os "principais conteúdos" (do documento do
+     projeto), usados para preencher o modal que abre ao clicar no
+     módulo dentro do card. ────────────────────────────────────────── */
   const TRILHAS = [
     {
       id: 'vendas',
@@ -735,11 +900,66 @@
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>',
       desc: 'Processo comercial, relacionamento com clientes, gestão financeira e operacional e aplicação prática da legislação de proteção ao consumidor.',
       modulos: [
-        'Técnicas de Negociação',
-        'CRM e Funil de Vendas',
-        'Controle e Gestão de Estoque',
-        'Fluxo de Caixa',
-        'CDC: Código de Defesa do Consumidor na Prática',
+        { nome: 'Técnicas de Negociação', conteudos: [
+          'Conceitos e fundamentos da negociação',
+          'Preparação e planejamento de negociações',
+          'Identificação de interesses e necessidades',
+          'Técnicas de persuasão e argumentação',
+          'Comunicação durante a negociação',
+          'Identificação e tratamento de objeções',
+          'Estratégias para alcançar acordos',
+          'Negociação ganha-ganha',
+          'Erros comuns durante uma negociação',
+          'Técnicas de fechamento',
+        ]},
+        { nome: 'CRM e Funil de Vendas', conteudos: [
+          'Conceito e importância do CRM',
+          'Cadastro e organização de clientes',
+          'Jornada de compra',
+          'Etapas do funil de vendas',
+          'Prospecção e qualificação de leads',
+          'Acompanhamento de oportunidades',
+          'Gestão do relacionamento com clientes',
+          'Taxas de conversão',
+          'Pós-venda e fidelização',
+          'Indicadores de desempenho comercial',
+        ]},
+        { nome: 'Controle e Gestão de Estoque', conteudos: [
+          'Conceitos básicos de estoque',
+          'Entrada e saída de mercadorias',
+          'Organização e identificação de produtos',
+          'Inventário',
+          'Controle de perdas e avarias',
+          'Estoque mínimo e máximo',
+          'Giro de estoque',
+          'Curva ABC',
+          'Reposição de mercadorias',
+          'Indicadores de estoque',
+        ]},
+        { nome: 'Fluxo de Caixa', conteudos: [
+          'Conceito de fluxo de caixa',
+          'Entradas e saídas financeiras',
+          'Contas a pagar e a receber',
+          'Organização financeira',
+          'Previsão de receitas e despesas',
+          'Controle do saldo',
+          'Identificação de períodos de maior ou menor movimentação',
+          'Planejamento financeiro',
+          'Análise de resultados',
+          'Utilização de planilhas para controle financeiro',
+        ]},
+        { nome: 'CDC: Código de Defesa do Consumidor na Prática', conteudos: [
+          'Conceitos fundamentais do CDC',
+          'Direitos básicos do consumidor',
+          'Deveres dos fornecedores',
+          'Oferta e publicidade',
+          'Práticas abusivas',
+          'Direito de arrependimento',
+          'Trocas, devoluções e garantias',
+          'Cobrança e atendimento ao consumidor',
+          'Responsabilidade do fornecedor',
+          'Aplicação do CDC em situações reais de atendimento',
+        ]},
       ],
     },
     {
@@ -748,10 +968,54 @@
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
       desc: 'Preparação para conduzir equipes, administrar diferentes perfis, desenvolver pessoas e estabelecer uma comunicação estratégica.',
       modulos: [
-        'Liderança Situacional',
-        'Gestão de Equipes Remotas',
-        'Feedback e Desenvolvimento',
-        'Comunicação Executiva',
+        { nome: 'Liderança Situacional', conteudos: [
+          'Conceitos de liderança',
+          'Liderança situacional',
+          'Estilos de liderança',
+          'Níveis de maturidade profissional',
+          'Delegação de atividades',
+          'Tomada de decisões',
+          'Gestão de conflitos',
+          'Desenvolvimento de colaboradores',
+          'Flexibilidade na liderança',
+          'Liderança orientada a resultados',
+        ]},
+        { nome: 'Gestão de Equipes Remotas', conteudos: [
+          'Características do trabalho remoto',
+          'Organização de equipes distribuídas',
+          'Comunicação digital',
+          'Gestão de tarefas e entregas',
+          'Reuniões virtuais eficientes',
+          'Acompanhamento de desempenho',
+          'Construção de confiança',
+          'Engajamento de equipes remotas',
+          'Gestão de conflitos à distância',
+          'Boas práticas para trabalho híbrido',
+        ]},
+        { nome: 'Feedback e Desenvolvimento', conteudos: [
+          'Conceito e importância do feedback',
+          'Feedback positivo e construtivo',
+          'Como dar e receber feedback',
+          'Comunicação assertiva',
+          'Identificação de pontos fortes e oportunidades de melhoria',
+          'Planos de desenvolvimento individual',
+          'Acompanhamento de evolução',
+          'Gestão de desempenho',
+          'Feedback contínuo',
+          'Cultura de desenvolvimento',
+        ]},
+        { nome: 'Comunicação Executiva', conteudos: [
+          'Comunicação estratégica',
+          'Comunicação verbal e não verbal',
+          'Comunicação assertiva',
+          'Oratória profissional',
+          'Apresentações executivas',
+          'Comunicação em reuniões',
+          'Construção de argumentos',
+          'Comunicação escrita corporativa',
+          'Gestão de conflitos na comunicação',
+          'Postura e linguagem profissional',
+        ]},
       ],
     },
     {
@@ -760,11 +1024,66 @@
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
       desc: 'Competências digitais fundamentais para aumentar produtividade, segurança e capacidade de análise no dia a dia.',
       modulos: [
-        'Excel',
-        'Inteligência Artificial no Trabalho',
-        'Power BI Essencial',
-        'Segurança Digital para Equipes',
-        'T.I. Básico',
+        { nome: 'Excel', conteudos: [
+          'Interface e funcionalidades básicas',
+          'Criação e formatação de planilhas',
+          'Fórmulas e funções',
+          'Classificação e filtros',
+          'Tabelas',
+          'Gráficos',
+          'Formatação condicional',
+          'Funções essenciais para o trabalho',
+          'Organização de dados',
+          'Aplicações práticas do Excel',
+        ]},
+        { nome: 'Inteligência Artificial no Trabalho', conteudos: [
+          'Conceitos fundamentais de IA',
+          'IA generativa',
+          'Utilização responsável da IA',
+          'Engenharia de prompts',
+          'Automação de tarefas',
+          'Produção e revisão de textos',
+          'Organização de informações',
+          'Análise e geração de ideias',
+          'IA aplicada à produtividade',
+          'Ética, privacidade e limitações da IA',
+        ]},
+        { nome: 'Power BI Essencial', conteudos: [
+          'Conceitos de Business Intelligence',
+          'Interface do Power BI',
+          'Importação de dados',
+          'Tratamento e organização de informações',
+          'Criação de gráficos e indicadores',
+          'Dashboards',
+          'Filtros e segmentações',
+          'Relatórios interativos',
+          'Análise de indicadores',
+          'Visualização de dados para tomada de decisões',
+        ]},
+        { nome: 'Segurança Digital para Equipes', conteudos: [
+          'Fundamentos da segurança digital',
+          'Senhas seguras',
+          'Autenticação em dois fatores',
+          'Phishing e engenharia social',
+          'Golpes digitais',
+          'Segurança de e-mails',
+          'Proteção de dispositivos',
+          'Cuidados com arquivos e links',
+          'Proteção de dados',
+          'Boas práticas de segurança no ambiente corporativo',
+        ]},
+        { nome: 'T.I. Básico', conteudos: [
+          'Conceitos básicos de hardware e software',
+          'Sistemas operacionais',
+          'Arquivos e pastas',
+          'Periféricos',
+          'Internet e redes',
+          'E-mail corporativo',
+          'Armazenamento em nuvem',
+          'Ferramentas digitais de trabalho',
+          'Solução de problemas básicos',
+          'Boas práticas de utilização dos recursos tecnológicos',
+        ]},
       ],
     },
     {
@@ -773,10 +1092,54 @@
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
       desc: 'Gestão de pessoas, integração, diversidade, experiência dos colaboradores e ambientes organizacionais mais saudáveis.',
       modulos: [
-        'Diversidade e Inclusão',
-        'Onboarding Eficaz',
-        'Employer Branding',
-        'Clima e Engajamento',
+        { nome: 'Diversidade e Inclusão', conteudos: [
+          'Conceitos de diversidade e inclusão',
+          'Respeito às diferenças',
+          'Equidade',
+          'Preconceitos e vieses inconscientes',
+          'Inclusão no ambiente de trabalho',
+          'Comunicação inclusiva',
+          'Acessibilidade',
+          'Combate à discriminação',
+          'Políticas de diversidade',
+          'Construção de ambientes inclusivos',
+        ]},
+        { nome: 'Onboarding Eficaz', conteudos: [
+          'Conceito de onboarding',
+          'Preparação para a chegada do colaborador',
+          'Apresentação da empresa e da cultura',
+          'Integração com a equipe',
+          'Comunicação de processos e responsabilidades',
+          'Treinamento inicial',
+          'Acompanhamento durante os primeiros meses',
+          'Experiência do novo colaborador',
+          'Indicadores de onboarding',
+          'Estratégias para aumentar a retenção',
+        ]},
+        { nome: 'Employer Branding', conteudos: [
+          'Conceito de Employer Branding',
+          'Marca empregadora',
+          'Proposta de valor ao colaborador',
+          'Experiência do funcionário',
+          'Atração de talentos',
+          'Retenção de profissionais',
+          'Comunicação da cultura organizacional',
+          'Reputação da empresa',
+          'Redes sociais e marca empregadora',
+          'Estratégias de fortalecimento da imagem institucional',
+        ]},
+        { nome: 'Clima e Engajamento', conteudos: [
+          'Conceito de clima organizacional',
+          'Engajamento profissional',
+          'Pesquisa de clima',
+          'Comunicação interna',
+          'Motivação',
+          'Reconhecimento profissional',
+          'Relacionamento entre equipes',
+          'Identificação de problemas organizacionais',
+          'Indicadores de clima e engajamento',
+          'Ações de melhoria',
+        ]},
       ],
     },
     {
@@ -785,10 +1148,54 @@
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
       desc: 'Métodos e ferramentas para organização pessoal e profissional, gestão de prioridades e qualidade nas entregas.',
       modulos: [
-        'Gestão de Tempo',
-        'Metodologias Ágeis',
-        'OKRs na Prática',
-        'Deep Work e Foco',
+        { nome: 'Gestão de Tempo', conteudos: [
+          'Conceitos de gestão do tempo',
+          'Organização da rotina',
+          'Definição de prioridades',
+          'Planejamento diário e semanal',
+          'Matriz de prioridades',
+          'Identificação de desperdícios de tempo',
+          'Delegação',
+          'Gestão de prazos',
+          'Planejamento de tarefas',
+          'Equilíbrio entre produtividade e descanso',
+        ]},
+        { nome: 'Metodologias Ágeis', conteudos: [
+          'Conceitos de agilidade',
+          'Manifesto Ágil',
+          'Scrum',
+          'Kanban',
+          'Organização de tarefas',
+          'Sprints',
+          'Priorização',
+          'Reuniões de acompanhamento',
+          'Melhoria contínua',
+          'Aplicação de metodologias ágeis no ambiente profissional',
+        ]},
+        { nome: 'OKRs na Prática', conteudos: [
+          'Conceito de OKRs',
+          'Objetivos e resultados-chave',
+          'Definição de objetivos',
+          'Construção de Key Results',
+          'Indicadores e métricas',
+          'Alinhamento entre equipes',
+          'Acompanhamento de resultados',
+          'Revisão e atualização de metas',
+          'Erros comuns na implementação',
+          'Aplicação prática de OKRs',
+        ]},
+        { nome: 'Deep Work e Foco', conteudos: [
+          'Conceito de Deep Work',
+          'Concentração e foco',
+          'Identificação de distrações',
+          'Gestão de notificações',
+          'Organização do ambiente de trabalho',
+          'Técnicas de concentração',
+          'Planejamento de períodos de foco',
+          'Gestão de interrupções',
+          'Redução da multitarefa',
+          'Construção de hábitos produtivos',
+        ]},
       ],
     },
   ]
@@ -828,11 +1235,14 @@
       const modulosHtml = t.modulos.map((m, i) => {
         const done = i < modulosFeitos
         return `
-          <div class="trilha-module ${done ? 'done' : ''}" style="--i:${i}">
+          <div class="trilha-module ${done ? 'done' : ''}" style="--i:${i}" data-trilha-idx="${idx}" data-modulo-idx="${i}" role="button" tabindex="0" aria-label="Abrir módulo ${m.nome}">
             <span class="module-num">${done
               ? '<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
               : (i + 1)}</span>
-            <span>${m}</span>
+            <span class="module-text">${m.nome}</span>
+            <span class="module-open-arrow" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
           </div>`
       }).join('')
 
@@ -1067,6 +1477,91 @@
     })
   }
 
+  /* ── modal de conteúdo do módulo: clicar em qualquer .trilha-module
+     (dentro de qualquer trilha-card) abre o modal com os "principais
+     conteúdos" daquele módulo específico, puxados do objeto TRILHAS.
+     Delegado no trilhaGrid, então funciona pros 5 cards igual. ────── */
+  ;(function () {
+    const moduleModal      = document.getElementById('moduleModal')
+    const moduleModalBox   = document.getElementById('moduleModalBox')
+    const moduleModalClose = document.getElementById('moduleModalClose')
+    const moduleModalEyebrow = document.getElementById('moduleModalEyebrow')
+    const moduleModalTitle   = document.getElementById('moduleModalTitle')
+    const moduleModalSub     = document.getElementById('moduleModalSub')
+    const moduleContentList  = document.getElementById('moduleContentList')
+    const moduleVideoToggle  = document.getElementById('moduleVideoToggle')
+    if (!moduleModal || !trilhaGrid) return
+
+    function openModuleModal(trilhaIdx, moduloIdx) {
+      const trilha = TRILHAS[trilhaIdx]
+      const modulo = trilha && trilha.modulos[moduloIdx]
+      if (!trilha || !modulo) return
+
+      moduleModalEyebrow.textContent = `Trilha de ${trilha.nome}`
+      moduleModalTitle.textContent   = modulo.nome
+      moduleModalSub.textContent     = `Módulo ${moduloIdx + 1} de ${trilha.modulos.length}`
+      moduleContentList.innerHTML = modulo.conteudos.map(c => `
+        <div class="module-content-item">
+          <span class="item-dot"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span>${c}</span>
+        </div>`).join('')
+
+      // reseta o estado do "vídeo" toda vez que abre um módulo novo
+      moduleVideoToggle.classList.remove('is-playing')
+      moduleVideoToggle.setAttribute('aria-label', 'Reproduzir vídeo')
+
+      moduleModal.style.display = 'flex'
+      moduleModal.offsetHeight // reflow, garante que a animação de entrada rode
+      moduleModal.classList.remove('leaving'); moduleModalBox.classList.remove('leaving')
+      moduleModal.classList.add('entering');   moduleModalBox.classList.add('entering')
+      document.body.style.overflow = 'hidden'
+      if (blurOverlay) blurOverlay.classList.remove('active')
+    }
+
+    function closeModuleModal() {
+      moduleModal.classList.remove('entering'); moduleModalBox.classList.remove('entering')
+      moduleModal.classList.add('leaving');      moduleModalBox.classList.add('leaving')
+      document.body.style.overflow = ''
+      setTimeout(() => {
+        moduleModal.style.display = 'none'
+        moduleModal.classList.remove('leaving'); moduleModalBox.classList.remove('leaving')
+      }, 230)
+    }
+
+    trilhaGrid.addEventListener('click', (e) => {
+      const moduleEl = e.target.closest('.trilha-module')
+      if (!moduleEl) return
+      // stopPropagation evita que, no touch, o listener global de
+      // clique (que fecha o card aberto ao tocar fora do summary)
+      // feche o card antes/ao mesmo tempo que o modal abre
+      e.stopPropagation()
+      openModuleModal(Number(moduleEl.dataset.trilhaIdx), Number(moduleEl.dataset.moduloIdx))
+    })
+
+    // acessibilidade: Enter/Espaço num módulo focado também abre
+    trilhaGrid.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      const moduleEl = e.target.closest('.trilha-module')
+      if (!moduleEl) return
+      e.preventDefault()
+      e.stopPropagation()
+      openModuleModal(Number(moduleEl.dataset.trilhaIdx), Number(moduleEl.dataset.moduloIdx))
+    })
+
+    moduleModalClose.addEventListener('click', closeModuleModal)
+    moduleModal.addEventListener('click', (e) => { if (e.target === moduleModal) closeModuleModal() })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && moduleModal.style.display === 'flex') closeModuleModal()
+    })
+
+    // botão de play/pause do placeholder de vídeo — só alterna o ícone
+    // e o aria-label por enquanto, sem vídeo de fato ainda
+    moduleVideoToggle.addEventListener('click', () => {
+      const playing = moduleVideoToggle.classList.toggle('is-playing')
+      moduleVideoToggle.setAttribute('aria-label', playing ? 'Pausar vídeo' : 'Reproduzir vídeo')
+    })
+  })()
+
   /* ── nav compacta no scroll down (desktop e mobile, efeitos diferentes) ── */
   const navEl = document.querySelector('.nav')
   let navTicking = false
@@ -1129,8 +1624,11 @@
 
     const layer = document.createElement('div')
     layer.id = 'selectionInkLayer'
-    // z-index:5 — acima do conteúdo normal, mas abaixo do nav/menu/modal
-    layer.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:5;'
+    // z-index:60 — acima de tudo, inclusive do modal-wrap (z-index:50),
+    // senão o traço fica pintado atrás do fundo do moduleModalBox e
+    // some (era o que estava acontecendo: seleção dentro do modal
+    // não aparecia porque a camada ficava por baixo dele)
+    layer.style.cssText = 'position:fixed; inset:0; pointer-events:none; z-index:60;'
     document.body.appendChild(layer)
 
     let marks = []
