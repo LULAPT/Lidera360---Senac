@@ -132,10 +132,44 @@
     html.theme-dark .nav { background: rgba(18,19,43,.85); }
     @media (prefers-color-scheme: dark) { html.theme-auto .nav { background: rgba(18,19,43,.85); } }
 
-    .nav-inner { height:4rem; display:flex; align-items:center; justify-content:space-between; }
+    .nav-inner {
+      height:4rem; display:flex; align-items:center; justify-content:space-between;
+      transition: height .5s cubic-bezier(.4,0,.2,1), padding .5s cubic-bezier(.4,0,.2,1), max-width .5s cubic-bezier(.4,0,.2,1);
+    }
+    /* estado "compacto": ativado via JS no scroll down —
+       desktop: a nav fica mais fina e o conteúdo vai pras pontas.
+       mobile: a nav fica mais "gorda" (mais alta) e o "Lidera" some do logo. */
+    @media (min-width: 701px) {
+      .nav.nav-compact .nav-inner {
+        height:3.2rem;
+        max-width:100% !important;
+        padding-left:1.25rem !important;
+        padding-right:1.25rem !important;
+      }
+    }
+    @media (max-width: 700px) {
+      .nav.nav-compact .nav-inner { height:4.15rem; }
+    }
+
     .logo { display:flex; align-items:center; gap:.5rem; }
-    .logo-text { font-weight:800; font-size:1.2rem; color:var(--ink); }
+    .logo-text {
+      display:inline-flex; align-items:baseline;
+      font-weight:800; font-size:1.2rem; color:var(--ink);
+    }
     .logo-text span { color:var(--green); }
+    /* "Lidera" nunca fica verde — sempre na cor do texto (branco/ink) */
+    .logo-text .logo-text-l { color:var(--ink); }
+    /* "Lidera" some suavemente no scroll down (só mobile), deixando só o "360" */
+    .logo-text-l {
+      display:inline-block; overflow:hidden; white-space:nowrap;
+      max-width:80px; opacity:1;
+      transition: max-width .45s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+    }
+    @media (max-width: 700px) {
+      .nav.nav-compact .logo-text-l { max-width:0; opacity:0; }
+      /* quando "Lidera" some, o "360" assume o lugar dele e fica branco (não mais verde) */
+      .nav.nav-compact .logo-text-n { color:var(--ink); transition: color .3s ease; }
+    }
     .logo-mark { flex-shrink:0; }
     html.theme-dark svg [fill="#0f1272"] { fill: var(--ink); }
     html.theme-dark svg [fill="#090b52"] { fill: #4b4f8f; }
@@ -144,7 +178,22 @@
       html.theme-auto svg [fill="#090b52"] { fill: #4b4f8f; }
     }
 
-    .nav-actions { display:flex; align-items:center; gap:.75rem; }
+    .nav-actions { display:flex; align-items:center; gap:.75rem; transition: gap .5s cubic-bezier(.4,0,.2,1); }
+    @media (min-width: 701px) { .nav.nav-compact .nav-actions { gap:0; } }
+
+    /* grupo colapsável: Início + Perfil somem juntos, suave, no scroll down —
+       só resta o botão de menu (hamburguer) */
+    .nav-links-group {
+      display:flex; align-items:center; gap:.75rem;
+      max-width:400px; opacity:1;
+      overflow:hidden;
+      transition: max-width .45s cubic-bezier(.4,0,.2,1), opacity .3s ease, margin .45s cubic-bezier(.4,0,.2,1);
+    }
+    @media (min-width: 701px) {
+      .nav.nav-compact .nav-links-group {
+        max-width:0; opacity:0; margin:0; pointer-events:none;
+      }
+    }
 
     .hamburger {
       display:flex; flex-direction:column; justify-content:center;
@@ -197,6 +246,7 @@
       border-left:2px solid var(--green);
       transform:translateX(100%);
       opacity:.6;
+      /* mesma suavidade (mais lenta) aplicada tanto na abertura quanto no fechamento */
       transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, box-shadow .4s ease,
                  background-color .35s ease, color .35s ease, border-color .35s ease;
       display:flex; flex-direction:column;
@@ -208,9 +258,6 @@
       transform:translateX(0);
       opacity:1;
       box-shadow:-8px 0 48px rgba(15,18,114,.12);
-    }
-    .menu-panel.closing {
-      transition:transform .3s cubic-bezier(.7,0,.84,0), opacity .3s ease, box-shadow .3s ease;
     }
 
     .menu-header {
@@ -553,10 +600,10 @@
   </nav>
 
   <div class="menu-footer">
-    <button class="btn-green full" onclick="window.location='index.html'">
+    <!-- <button class="btn-green full" onclick="window.location='index.html'">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
       Voltar ao site
-    </button>
+    </button> -->
     <p class="menu-note">Você está no seu Dashboard pessoal</p>
   </div>
 </div>
@@ -571,18 +618,20 @@
         <polyline points="8,36 20,20 30,28 42,10" stroke="#2fd55a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <circle cx="42" cy="10" r="3" fill="#2fd55a"/>
       </svg>
-      <span class="logo-text">Lidera<span>360</span></span>
+      <span class="logo-text"><span class="logo-text-l">Lidera</span><span class="logo-text-n">360</span></span>
     </a>
 
     <div class="nav-actions">
-      <a href="index.html" class="btn-outline hide-mobile">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
-        Início
-      </a>
-      <a href="perfil.html" class="btn-outline hide-mobile">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Perfil
-      </a>
+      <div class="nav-links-group">
+        <a href="index.html" class="btn-outline hide-mobile">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+          Início
+        </a>
+        <a href="perfil.html" class="btn-outline hide-mobile">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Perfil
+        </a>
+      </div>
       <button class="hamburger" id="hamburger" aria-label="Menu">
         <span class="bar1"></span>
         <span class="bar2"></span>
@@ -1018,6 +1067,21 @@
     })
   }
 
+  /* ── nav compacta no scroll down (desktop e mobile, efeitos diferentes) ── */
+  const navEl = document.querySelector('.nav')
+  let navTicking = false
+
+  function updateNavCompact() {
+    navTicking = false
+    navEl.classList.toggle('nav-compact', window.scrollY > 60)
+  }
+  window.addEventListener('scroll', () => {
+    if (navTicking) return
+    navTicking = true
+    requestAnimationFrame(updateNavCompact)
+  }, { passive: true })
+  updateNavCompact()
+
   /* ── menu (mesmo mecanismo do index, só que com 1 item) ─────────── */
   const hamburger    = document.getElementById('hamburger')
   const menuBackdrop = document.getElementById('menuBackdrop')
@@ -1039,7 +1103,7 @@
     menuPanel.classList.remove('open')
     document.body.style.overflow = ''
     clearTimeout(menuPanel._closeTimer)
-    menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 320)
+    menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 450)
   }
 
   hamburger.addEventListener('click', () => menuPanel.classList.contains('open') ? closeMenu() : openMenu())

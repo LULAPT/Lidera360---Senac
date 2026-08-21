@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       /* Dark theme specific styling for the toggle button */
       html.theme-dark .theme-toggle {
-        background-color: #0f12726c;
+      background-color: #1a1a366c !important;
         box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
       }
       
@@ -189,15 +189,24 @@ document.addEventListener('DOMContentLoaded', function() {
       setTheme(currentTheme);
     }
     
-    // Toggle through themes on click
+    // Toggle direto entre claro e escuro, sem o passo por "auto".
+    // Antes o ciclo era auto -> light -> dark -> auto: partindo do tema-dark
+    // (padrão do <html>), o primeiro clique caía em "auto", que — se o SO
+    // do usuário estiver em modo escuro — renderiza idêntico ao dark (mesmo
+    // CSS de prefers-color-scheme), dando a impressão de que precisava de
+    // um segundo clique "de confirmação" pra realmente clarear a página.
     themeToggle.addEventListener('click', function() {
-      // Cycle through themes: auto -> light -> dark -> auto
-      if (currentTheme === 'theme-auto') {
+      if (currentTheme === 'theme-dark') {
         setTheme('theme-light');
       } else if (currentTheme === 'theme-light') {
         setTheme('theme-dark');
       } else {
-        setTheme('theme-auto');
+        // Caso raro de partir do "auto" (ex: sem preferência salva ainda):
+        // vai direto pro tema oposto ao que está aparecendo na tela agora,
+        // em vez de só trocar de classe sem mudar a aparência.
+        const systemIsDark = window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(systemIsDark ? 'theme-light' : 'theme-dark');
       }
       
       // Add click animation

@@ -127,21 +127,24 @@
     .btn-green.full  { width:100%; }
 
     .btn-outline {
-      display:inline-flex; align-items:center; justify-content:center;
+      display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
       padding:.75rem 1.5rem;
       background:transparent; color:var(--ink);
       font-weight:700; font-size:.8rem;
       border:2px solid var(--navy); border-radius:50px;
-      transition:background .2s, color .2s;
+      transition:background .2s, color .2s, border-color .2s, transform .15s;
       cursor:pointer;
     }
-    .btn-outline:hover { background:var(--navy); color:#fff; }
+    html.theme-dark .btn-outline { border-color:var(--border); }
+    @media (prefers-color-scheme: dark) { html.theme-auto .btn-outline { border-color:var(--border); } }
+    .btn-outline:hover { background:var(--navy); color:#fff; border-color:var(--navy); }
+    .btn-outline:active { transform:scale(.96); }
     .btn-outline.full { width:100%; }
 
     /* ── nav ─────────────────────────────────────────── */
     .nav {
       position:fixed; top:0; left:0; right:0; z-index:40;
-      background:rgba(255,255,255,.95);
+      background:rgb(255, 255, 255);
       border-bottom:1px solid var(--border);
       backdrop-filter:blur(12px);
       -webkit-backdrop-filter:blur(12px);
@@ -203,8 +206,9 @@
       border-left:2px solid var(--green);
       transform:translateX(100%);
       opacity:.6;
-      /* abertura: easing "expo-out", com leve respiro no fim */
-      transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, box-shadow .4s ease;
+      /* mesma suavidade (mais lenta) aplicada tanto na abertura quanto no fechamento */
+      transition:transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, box-shadow .4s ease,
+                 background-color .35s ease, color .35s ease, border-color .35s ease;
       display:flex; flex-direction:column;
       box-shadow:-8px 0 48px rgba(15,18,114,0);
       overflow:hidden;
@@ -214,10 +218,6 @@
       transform:translateX(0);
       opacity:1;
       box-shadow:-8px 0 48px rgba(15,18,114,.12);
-    }
-    .menu-panel.closing {
-      /* fechamento: easing "expo-in", mais rápido e direto */
-      transition:transform .3s cubic-bezier(.7,0,.84,0), opacity .3s ease, box-shadow .3s ease;
     }
 
     /* canvas de partículas do menu — fica atrás dos círculos e do conteúdo,
@@ -920,7 +920,7 @@
     }
 
     /* smooth cross-fade on theme switch for surfaces without their own transition */
-    .nav, footer, .modal-box, .menu-panel, .stat-cell,
+    .nav, footer, .modal-box, .stat-cell,
     .courses-section, .features-section, .testimonials-section, .pricing-section {
       transition: background-color .35s ease, color .35s ease, border-color .35s ease;
     }
@@ -1687,7 +1687,7 @@ html.theme-dark .hamburger {
     menuPanel.classList.remove('open')
     document.body.style.overflow = ''
     clearTimeout(menuPanel._closeTimer)
-    menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 320)
+    menuPanel._closeTimer = setTimeout(() => menuPanel.classList.remove('closing'), 450)
     menuParticles.stop()
   }
 
