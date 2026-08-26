@@ -43,8 +43,13 @@
       --green:  #2fd55a;
       --greend: #22b847;
       --orange: #f97316;
-      --bg:     #f5f6ff;
-      --white:  #ffffff;
+      /* tema claro em off-white/creme em vez de branco puro (mesmos
+         tokens do index.html): #ffffff em tela cheia é ofuscante, então
+         --white (as SUPERFÍCIES: cards, nav, seções claras) virou um
+         creme suave e --bg (o fundo da página) virou um creme um tom
+         abaixo, mantendo a mesma distância entre os dois. */
+      --bg:     #f2ebdc;
+      --white:  #fbf7ed;
       --muted:  #6b7280;
       --border: rgba(15,18,114,.14);
       --ink:    var(--navy);
@@ -156,7 +161,9 @@
     /* ── nav (igual ao dash.html) ─────────────────────── */
     .nav {
       position:fixed; top:0; left:0; right:0; z-index:40;
-      background:rgba(255,255,255,.95);
+      /* creme translúcido, igual ao index (o alpha menor também deixa o
+         backdrop-filter abaixo realmente aparecer) */
+      background:rgba(251,247,237,.85);
       border-bottom:1px solid var(--border);
       backdrop-filter:blur(12px);
       -webkit-backdrop-filter:blur(12px);
@@ -384,17 +391,66 @@
     .profile-hero { position:relative; padding:5.5rem 0 0; }
     @media(min-width:769px){ .profile-hero{ padding:6.5rem 0 0; } }
 
+    /* ── capa: dois comportamentos, um por tema ─────────────────────
+       O .profile-id (avatar + nome + headline + botões) é filho da
+       .cover, e o gradiente é uma CAMADA à parte (.cover-bg) recortada
+       em cima dele. Quem decide se o bloco fica dentro ou atravessa a
+       borda é só o `bottom` dessa camada:
+
+       • TEMA CLARO — .cover-bg vai até embaixo (bottom:0), o bloco todo
+         fica sobre o gradiente escuro e o texto é branco. É o único
+         jeito de funcionar aqui: com o fundo da página em creme, um
+         bloco atravessando teria metade do texto no escuro e metade no
+         claro, e nenhuma cor serve pros dois (era o bug do --muted
+         sumindo).
+       • TEMA ESCURO — .cover-bg recua (bottom:60px) e o bloco volta a
+         atravessar a borda, como no design original. Funciona porque o
+         fundo da página TAMBÉM é escuro: --ink e --muted são legíveis
+         tanto sobre o gradiente quanto sobre a página.
+
+       Como a diferença entre os dois é só `bottom` + `padding-top` +
+       `color`, todas propriedades animáveis, a troca de tema desliza
+       sozinha via transition — o gradiente "sobe/desce" e as cores do
+       texto fazem cross-fade junto. */
     .cover {
-      position:relative; overflow:hidden;
-      height:150px; border-radius:24px;
+      position:relative;
+      min-height:190px;
+      padding:4.5rem 1.25rem 1.5rem;
+      display:flex; flex-direction:column; justify-content:flex-end;
+      transition:padding-top .55s cubic-bezier(.16,1,.3,1);
+    }
+    @media(min-width:769px){ .cover{ min-height:240px; padding:5rem 1.75rem 1.75rem; } }
+
+    .cover-bg {
+      position:absolute;
+      left:0; right:0; top:0; bottom:0;
+      border-radius:24px; overflow:hidden;
       background:linear-gradient(120deg, var(--navy), var(--navyd) 55%, var(--green) 130%);
       box-shadow:0 8px 28px rgba(15,18,114,.18);
+      transition:bottom .55s cubic-bezier(.16,1,.3,1);
     }
-    @media(min-width:769px){ .cover{ height:210px; } }
-    .cover .circle:nth-child(1) { width:220px; height:220px; background:rgba(47,213,90,.22); top:-90px; right:-40px; }
-    .cover .circle:nth-child(2) { width:140px; height:140px; background:rgba(255,255,255,.08); bottom:-60px; left:10%; }
+    /* o recuo do gradiente só vale no desktop: no mobile o .profile-id
+       quebra em várias linhas (os botões descem pra linha de baixo) e a
+       borda cairia no meio delas — lá o bloco fica sempre dentro */
+    /* os 90px de recuo + 8rem de padding-top reproduzem o
+       enquadramento original: gradiente com ~200px de altura, a borda
+       cruzando o avatar mais ou menos na metade e passando logo abaixo
+       do nome — a headline e a linha de local/conexões caem no fundo
+       da página, como era antes */
+    @media(min-width:769px){
+      html.theme-dark .cover    { padding-top:8rem; }
+      html.theme-dark .cover-bg { bottom:90px; }
+    }
+    @media (min-width:769px) and (prefers-color-scheme: dark) {
+      html.theme-auto .cover    { padding-top:8rem; }
+      html.theme-auto .cover-bg { bottom:90px; }
+    }
+
+    .cover-bg .circle:nth-child(1) { width:220px; height:220px; background:rgba(47,213,90,.22); top:-90px; right:-40px; }
+    .cover-bg .circle:nth-child(2) { width:140px; height:140px; background:rgba(255,255,255,.08); bottom:-60px; left:10%; }
     .cover-edit {
-      position:absolute; right:1rem; bottom:1rem;
+      /* subiu pro topo: o rodapé da capa agora é dos botões de ação */
+      position:absolute; right:1rem; top:1rem; z-index:3;
       width:38px; height:38px; border-radius:50%;
       background:rgba(0,0,0,.35); backdrop-filter:blur(4px);
       display:flex; align-items:center; justify-content:center;
@@ -406,11 +462,9 @@
 
     .profile-id {
       display:flex; align-items:flex-end; gap:1.25rem;
-      margin-top:-52px; padding:0 .5rem;
       position:relative; z-index:2;
       flex-wrap:wrap;
     }
-    @media(min-width:769px){ .profile-id{ margin-top:-64px; } }
 
     /* avatar-lg é apenas o "quadro" posicionado (sem overflow:hidden) —
        assim o status-dot pode ficar sobre a borda do círculo sem ser
@@ -447,20 +501,39 @@
     }
     @media(min-width:769px){ .status-dot{ width:22px; height:22px; bottom:10px; right:10px; } }
 
+    /* cores do bloco de identidade — o par que acompanha o
+       comportamento da .cover-bg acima:
+       claro  = branco (o bloco está 100% sobre o gradiente)
+       escuro = --ink/--muted (o bloco atravessa a borda, e esses dois
+                são legíveis tanto no gradiente quanto na página)
+       a transition faz o cross-fade das cores junto com o gradiente
+       deslizando, quando o usuário troca de tema */
     .profile-name-block { flex:1; min-width:200px; padding-bottom:.35rem; }
-    .profile-name { font-size:clamp(1.3rem,3vw,1.85rem); font-weight:800; line-height:1.15; display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; color:#fff; }
-    html.theme-dark .profile-name { color:var(--ink); }
-    @media (prefers-color-scheme: dark) {
-      html.theme-auto .profile-name { color:var(--ink); }
-    }
+    .profile-name { font-size:clamp(1.3rem,3vw,1.85rem); font-weight:800; line-height:1.15; display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; color:#fff; transition:color .55s ease; }
     .verified-badge { color:var(--green); flex-shrink:0; }
-    .profile-headline { font-size:.9rem; color:var(--muted); margin-top:.3rem; }
-    .profile-meta { display:flex; flex-wrap:wrap; gap:1rem; margin-top:.55rem; font-size:.78rem; color:var(--muted); }
+    .profile-headline { font-size:.9rem; color:rgba(255,255,255,.82); margin-top:.3rem; transition:color .55s ease; }
+    .profile-meta { display:flex; flex-wrap:wrap; gap:1rem; margin-top:.55rem; font-size:.78rem; color:rgba(255,255,255,.72); transition:color .55s ease; }
+
+    /* só no desktop, porque só lá o gradiente recua (ver .cover-bg) */
+    @media(min-width:769px){
+      html.theme-dark .profile-name     { color:var(--ink); }
+      html.theme-dark .profile-headline,
+      html.theme-dark .profile-meta     { color:var(--muted); }
+    }
+    @media (min-width:769px) and (prefers-color-scheme: dark) {
+      html.theme-auto .profile-name     { color:var(--ink); }
+      html.theme-auto .profile-headline,
+      html.theme-auto .profile-meta     { color:var(--muted); }
+    }
     .profile-meta span { display:inline-flex; align-items:center; gap:.35rem; }
     .profile-meta svg { width:14px; height:14px; flex-shrink:0; }
     .profile-meta .conexoes { color:var(--green); font-weight:700; }
 
     .profile-actions { display:flex; align-items:center; gap:.6rem; padding-bottom:.35rem; margin-left:auto; }
+    /* o .btn-icon padrão usa --ink/--border, que sobre a capa escura
+       viravam navy-sobre-navy no tema claro (o botão sumia) */
+    .profile-actions .btn-icon { border-color:rgba(255,255,255,.35); color:#fff; }
+    .profile-actions .btn-icon:hover { border-color:#fff; background:rgba(255,255,255,.12); }
 
     /* ── faixa de estatísticas ─────────────────────────── */
     .stats-bar {
@@ -477,8 +550,48 @@
 
     .profile-body { padding:2.25rem 0 5rem; display:flex; flex-direction:column; gap:1.5rem; }
 
-    .card-title { font-size:1rem; font-weight:800; margin-bottom:.9rem; display:flex; align-items:center; gap:.5rem; }
-    .card-title svg { width:18px; height:18px; color:var(--green); flex-shrink:0; }
+    .card-title { font-size:1rem; font-weight:800; margin-bottom:.9rem; display:flex; align-items:center; gap:.6rem; }
+
+    /* selo do ícone do card — mesma linguagem do .check-badge da lista
+       "sobre nós" do index: no hover ele se pinta de verde, o ícone dá
+       uma escalada com overshoot e sai um anel de ripple.
+       O gatilho é o hover do CARD inteiro (e não só do título), pra
+       casar com o tilt 3D que o card já faz — assim o ícone reage no
+       mesmo momento em que o card se mexe. */
+    .card-icon {
+      position:relative;
+      flex-shrink:0;
+      width:30px; height:30px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(47,213,90,.14);
+      color:var(--green);
+      transition:background-color .3s ease, color .3s ease;
+    }
+    .card-title svg {
+      width:17px; height:17px; color:inherit; flex-shrink:0;
+      transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .card-icon::after {
+      content:"";
+      position:absolute; inset:0;
+      border-radius:50%;
+      border:1.5px solid var(--green);
+      opacity:0;
+      pointer-events:none;
+    }
+    .card:hover .card-icon { background:var(--green); color:#fff; }
+    .card:hover .card-icon svg { transform:scale(1.15); }
+    .card:hover .card-icon::after { animation:cardIconRipple .7s ease forwards; }
+
+    @keyframes cardIconRipple {
+      from { opacity:.55; transform:scale(1); }
+      to   { opacity:0;   transform:scale(1.9); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card:hover .card-icon svg { transform:none; }
+      .card:hover .card-icon::after { animation:none; }
+    }
     .about-text { font-size:.86rem; line-height:1.75; color:var(--muted); }
     .about-text strong { color:var(--ink); }
 
@@ -730,46 +843,53 @@
 <section class="profile-hero">
   <div class="wrap" data-reveal="scale">
     <div class="cover">
-      <div class="circle"></div>
-      <div class="circle"></div>
-      <button class="cover-edit" aria-label="Editar capa">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </button>
-    </div>
-
-    <div class="profile-id">
-      <div class="avatar-lg" id="profileAvatar">
-        <div class="avatar-lg-photo" style="background-image:url('/src/img/chorro_avatar.jpg');">
-          <span class="avatar-lg-overlay">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </span>
-        </div>
-        <span class="status-dot" title="Online"></span>
+      <!-- o gradiente virou uma CAMADA separada (.cover-bg) em vez de
+           ser o fundo da .cover: é ela que recua no tema escuro, pra
+           que o bloco de identidade volte a atravessar a borda da capa.
+           Os círculos decorativos moram dentro dela porque é ela quem
+           tem o overflow:hidden que os recorta. -->
+      <div class="cover-bg">
+        <div class="circle"></div>
+        <div class="circle"></div>
+        <button class="cover-edit" aria-label="Editar capa">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
       </div>
 
-      <div class="profile-name-block">
-        <p class="profile-name">
-          Dharlan
+      <div class="profile-id">
+        <div class="avatar-lg" id="profileAvatar">
+          <div class="avatar-lg-photo" style="background-image:url('/src/img/chorro_avatar.jpg');">
+            <span class="avatar-lg-overlay">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+          </div>
+          <span class="status-dot" title="Online"></span>
+        </div>
+
+        <div class="profile-name-block">
+          <p class="profile-name">
+            Dharlan
           <svg class="verified-badge" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 2.1 3.1-.6 1 3 2.9 1.3-.6 3.1L23 14l-2.2 2.1.6 3.1-2.9 1.3-1 3-3.1-.6L12 25l-2.4-2.1-3.1.6-1-3-2.9-1.3.6-3.1L1 12l2.2-2.1-.6-3.1 2.9-1.3 1-3 3.1.6L12 2z" transform="scale(.9) translate(1,-1)"/><path d="M8.5 12.2l2.4 2.4 4.6-4.9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </p>
-        <p class="profile-headline">Auxiliar de Vendedor · Narciso Enxovais &nbsp;•&nbsp; Trilha de Vendas — 95% concluída</p>
-        <div class="profile-meta">
-          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Abreu e Lima, PE</span>
-          <span class="conexoes">128 conexões</span>
+          </p>
+          <p class="profile-headline">Auxiliar de Vendedor · Narciso Enxovais &nbsp;•&nbsp; Trilha de Vendas — 95% concluída</p>
+          <div class="profile-meta">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Abreu e Lima, PE</span>
+            <span class="conexoes">128 conexões</span>
+          </div>
         </div>
-      </div>
 
-      <div class="profile-actions">
-        <button class="btn-green">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-          <span class="hide-mobile">Editar perfil</span>
-        </button>
-        <button class="btn-icon" aria-label="Compartilhar">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
-        </button>
+        <div class="profile-actions">
+          <button class="btn-green">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <span class="hide-mobile">Editar perfil</span>
+          </button>
+          <button class="btn-icon" aria-label="Compartilhar">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -790,7 +910,7 @@
     <!-- Sobre -->
     <div class="card" data-reveal>
       <p class="card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         Sobre
       </p>
       <p class="about-text">
@@ -803,7 +923,7 @@
     <!-- Trilhas concluídas / certificações -->
     <div class="card" data-reveal>
       <p class="card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        <span class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>
         Trilhas e certificações
       </p>
       <div class="badge-grid" id="badgeGrid"></div>
@@ -812,7 +932,7 @@
     <!-- Habilidades -->
     <div class="card" data-reveal>
       <p class="card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
         Habilidades
       </p>
       <div class="skills-wrap" id="skillsWrap"></div>
@@ -821,7 +941,7 @@
     <!-- Experiência -->
     <div class="card" data-reveal>
       <p class="card-title">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg>
+        <span class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><path d="M2 13h20"/></svg></span>
         Experiência
       </p>
       <div class="exp-item">
@@ -829,7 +949,7 @@
         <div>
           <p class="exp-role">Auxiliar de Vendedor</p>
           <p class="exp-company">Narciso Enxovais</p>
-          <p class="exp-period">Mar 2024 — atual · 2 anos e 5 meses</p>
+          <p class="exp-period">Nov 2025 — Atual</p>
           <p class="exp-desc">Atendimento ao cliente, organização de estoque e apoio nas metas comerciais da loja.</p>
         </div>
       </div>
@@ -838,7 +958,7 @@
         <div>
           <p class="exp-role">Aluno — Trilha de Vendas</p>
           <p class="exp-company">Lidera360</p>
-          <p class="exp-period">Jun 2025 — atual</p>
+          <p class="exp-period">Jun 2025 — Atual</p>
           <p class="exp-desc">Desenvolvimento contínuo em técnicas de negociação, CRM, gestão financeira e relacionamento com o cliente.</p>
         </div>
       </div>
@@ -859,7 +979,7 @@
       <div class="post-head">
         <div class="post-avatar" style="background-image:url('/src/img/chorro_avatar.jpg');"></div>
         <div>
-          <p class="post-author">Dharlan Silva</p>
+          <p class="post-author">Dharlan</p>
           <p class="post-time">há 2 dias · 🌐 Lidera360</p>
         </div>
       </div>
@@ -891,7 +1011,7 @@
       <div class="post-head">
         <div class="post-avatar" style="background-image:url('/src/img/chorro_avatar.jpg');"></div>
         <div>
-          <p class="post-author">Dharlan Silva</p>
+          <p class="post-author">Dharlan</p>
           <p class="post-time">há 1 semana · 🌐 Lidera360</p>
         </div>
       </div>
