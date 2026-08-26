@@ -582,21 +582,65 @@
       position:fixed; inset:0; z-index:50;
       display:flex; align-items:center; justify-content:center;
       padding:1rem;
-      background:rgba(15,18,114,.35);
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
+      /* véu por cima do blur: sem ele o painel de vidro não tem
+         contraste pra "descolar" do fundo */
+      background:rgba(15,18,114,.22);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+    html.theme-dark .modal-wrap { background:rgba(2,3,15,.5); }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .modal-wrap { background:rgba(2,3,15,.5); }
     }
     .modal-wrap.entering { animation:fade-in .25s ease; }
     .modal-wrap.leaving  { animation:fade-out .25s ease forwards; }
 
+    /* ── tokens do vidro (mesma receita do modal de login do index) ──
+       Ficam no .modal-box e não no :root porque só ele e o que está
+       dentro usam — então painel, selos e etiquetas mudam juntos
+       quando o tema troca. */
     .modal-box {
+      --glass-fill:   rgba(253,251,246,.58);
+      --glass-stroke: rgba(255,255,255,.85);
+      --glass-sheen:  rgba(255,255,255,.9);
+      --field-fill:   rgba(255,255,255,.45);
+      --field-stroke: rgba(15,18,114,.10);
+
       width:100%; max-width:22rem;
-      background:var(--white); border-radius:24px;
+      border-radius:24px;
       padding:2.5rem 2rem;
       position:relative;
-      box-shadow:0 24px 64px rgba(15,18,114,.2);
       overflow:hidden;
-      border:2px solid var(--border);
+
+      background:var(--glass-fill);
+      backdrop-filter:blur(28px) saturate(160%);
+      -webkit-backdrop-filter:blur(28px) saturate(160%);
+      border:1px solid var(--glass-stroke);
+      /* a sombra externa dá profundidade; o inset claro no topo é o
+         "brilho" da quina superior — é ele que faz parecer vidro em
+         vez de um retângulo translúcido */
+      box-shadow:0 24px 64px rgba(15,18,114,.28),
+                 inset 0 1px 0 var(--glass-sheen);
+    }
+    html.theme-dark .modal-box {
+      --glass-fill:   rgba(30,32,60,.55);
+      --glass-stroke: rgba(255,255,255,.16);
+      --glass-sheen:  rgba(255,255,255,.14);
+      --field-fill:   rgba(255,255,255,.05);
+      --field-stroke: rgba(255,255,255,.12);
+      box-shadow:0 24px 64px rgba(0,0,0,.5),
+                 inset 0 1px 0 var(--glass-sheen);
+    }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .modal-box {
+        --glass-fill:   rgba(30,32,60,.55);
+        --glass-stroke: rgba(255,255,255,.16);
+        --glass-sheen:  rgba(255,255,255,.14);
+        --field-fill:   rgba(255,255,255,.05);
+        --field-stroke: rgba(255,255,255,.12);
+        box-shadow:0 24px 64px rgba(0,0,0,.5),
+                   inset 0 1px 0 var(--glass-sheen);
+      }
     }
     .modal-box.entering { animation:modal-in  .3s  cubic-bezier(.34,1.56,.64,1) both; }
     .modal-box.leaving  { animation:modal-out .22s cubic-bezier(.4,0,1,1)       forwards; }
@@ -645,44 +689,251 @@
       display:flex; align-items:center; justify-content:center;
       position:relative; overflow:hidden;
       margin-bottom:1.75rem;
+      /* o bloco do vídeo é opaco e fica colado no topo, cobrindo o
+         "brilho" da quina superior do painel de vidro — este inset
+         devolve esse fio de luz */
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
     }
+    /* as duas "bolinhas" decorativas: ganharam blur pesado (viraram
+       manchas de luz difusa em vez de círculos de borda dura) e
+       flutuam devagar, cada uma no seu ritmo e no seu caminho — o que
+       dá a impressão de que o fundo do player está vivo. Só transform
+       é animado, então roda tudo na GPU. */
     .module-video-placeholder::before,
     .module-video-placeholder::after {
       content:''; position:absolute; border-radius:50%; pointer-events:none;
+      will-change:transform;
     }
-    .module-video-placeholder::before { width:180px; height:180px; background:rgba(47,213,90,.12); top:-60px; right:-40px; }
-    .module-video-placeholder::after  { width:130px; height:130px; background:rgba(255,255,255,.05); bottom:-50px; left:-30px; }
+    .module-video-placeholder::before {
+      width:200px; height:200px;
+      background:rgba(47,213,90,.20);
+      top:-70px; right:-50px;
+      filter:blur(28px);
+      animation:videoBlobA 15s ease-in-out infinite;
+    }
+    .module-video-placeholder::after {
+      width:150px; height:150px;
+      background:rgba(255,255,255,.08);
+      bottom:-55px; left:-35px;
+      filter:blur(24px);
+      animation:videoBlobB 19s ease-in-out infinite;
+    }
+    @keyframes videoBlobA {
+      0%, 100% { transform:translate(0,0)         scale(1);    }
+      33%      { transform:translate(-26px,18px)  scale(1.12); }
+      66%      { transform:translate(14px,-12px)  scale(.92);  }
+    }
+    @keyframes videoBlobB {
+      0%, 100% { transform:translate(0,0)         scale(1);    }
+      40%      { transform:translate(30px,-16px)  scale(1.15); }
+      70%      { transform:translate(-12px,10px)  scale(.95);  }
+    }
 
+    /* ── botão de play ────────────────────────────────────────────
+       Vidro de verdade (blur + borda fina + brilho no topo), ícones
+       em cross-fade no lugar do display:none/block antigo, e dois
+       anéis que pulsam pra fora enquanto está pausado — os anéis
+       somem quando entra em "playing", porque aí ele não precisa
+       mais chamar atenção. */
     .module-video-toggle {
-      width:64px; height:64px; border-radius:50%;
-      background:rgba(255,255,255,.14);
-      border:2px solid rgba(255,255,255,.55);
-      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
-      display:flex; align-items:center; justify-content:center;
+      width:68px; height:68px; border-radius:50%;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.42);
+      backdrop-filter:blur(10px) saturate(140%);
+      -webkit-backdrop-filter:blur(10px) saturate(140%);
+      /* grid em vez de flex: os dois ícones ocupam a MESMA célula, o
+         que permite o cross-fade sem um empurrar o outro */
+      display:grid; place-items:center;
       color:#fff; position:relative; z-index:1;
-      transition:background .2s ease, transform .15s ease, border-color .2s ease;
+      box-shadow:0 8px 28px rgba(0,0,0,.28),
+                 inset 0 1px 0 rgba(255,255,255,.45);
+      transition:background-color .3s ease, border-color .3s ease,
+                 box-shadow .3s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
     }
-    .module-video-toggle:hover  { background:rgba(255,255,255,.24); border-color:#fff; }
-    .module-video-toggle:active { transform:scale(.92); }
-    .module-video-toggle svg { width:24px; height:24px; }
-    .module-video-toggle .icon-pause { display:none; }
-    .module-video-toggle.is-playing .icon-play  { display:none; }
-    .module-video-toggle.is-playing .icon-pause { display:block; }
+    .module-video-toggle:hover {
+      background:rgba(255,255,255,.22);
+      border-color:#fff;
+      transform:scale(1.08);
+      box-shadow:0 12px 34px rgba(0,0,0,.34),
+                 0 0 0 6px rgba(47,213,90,.18),
+                 inset 0 1px 0 rgba(255,255,255,.55);
+    }
+    .module-video-toggle:active { transform:scale(.94); }
+
+    .module-video-toggle svg {
+      grid-area:1 / 1;
+      width:24px; height:24px;
+      transition:opacity .25s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    /* o triângulo do play é opticamente descentrado — 2px pra direita
+       acerta o centro visual dentro do círculo */
+    .module-video-toggle .icon-play  { transform:translateX(2px); }
+    .module-video-toggle .icon-pause { opacity:0; transform:scale(.6); }
+    .module-video-toggle.is-playing .icon-play  { opacity:0; transform:scale(.6); }
+    .module-video-toggle.is-playing .icon-pause { opacity:1; transform:scale(1); }
+
+    /* anéis pulsantes (dois, defasados em meio ciclo) */
+    .module-video-toggle::before,
+    .module-video-toggle::after {
+      content:"";
+      position:absolute; inset:0;
+      border-radius:50%;
+      border:1.5px solid rgba(255,255,255,.5);
+      pointer-events:none;
+      animation:videoPulseRing 2.6s cubic-bezier(.2,.6,.3,1) infinite;
+    }
+    .module-video-toggle::after { animation-delay:1.3s; }
+    .module-video-toggle.is-playing::before,
+    .module-video-toggle.is-playing::after { animation:none; opacity:0; }
+    @keyframes videoPulseRing {
+      0%   { opacity:.5; transform:scale(1);   }
+      100% { opacity:0;  transform:scale(1.9); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .module-video-placeholder::before,
+      .module-video-placeholder::after,
+      .module-video-toggle::before,
+      .module-video-toggle::after { animation:none; }
+      .module-video-toggle::before,
+      .module-video-toggle::after { opacity:0; }
+      .module-video-toggle:hover  { transform:none; }
+    }
 
     .module-modal-inner { padding:0 2rem; }
     .module-modal-eyebrow { font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--green); margin-bottom:.4rem; }
     .module-modal-title { font-size:1.4rem; font-weight:800; line-height:1.25; margin-bottom:.35rem; }
-    .module-modal-sub { font-size:.8rem; color:var(--muted); margin-bottom:1.5rem; }
+    .module-modal-sub {
+      font-size:.8rem; color:var(--muted); margin-bottom:1.5rem;
+      display:flex; align-items:center; flex-wrap:wrap; gap:.5rem;
+    }
+    /* etiqueta de estado do módulo (concluído / em andamento / não
+       iniciado), derivada do progresso real da trilha */
+    .module-status {
+      font-size:.68rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:.05em;
+      padding:.2rem .6rem; border-radius:50px;
+      border:1px solid transparent;
+    }
+    .module-status.is-concluido { background:rgba(47,213,90,.14);  color:var(--green);  border-color:rgba(47,213,90,.3); }
+    .module-status.is-andamento { background:rgba(249,115,22,.14); color:var(--orange); border-color:rgba(249,115,22,.3); }
+    /* o pendente usa os tokens de vidro (e não --bg/--border), senão
+       vira um retângulo opaco em cima do painel translúcido */
+    .module-status.is-pendente  { background:var(--field-fill);    color:var(--muted);  border-color:var(--field-stroke); }
+    .module-status-count { font-size:.72rem; color:var(--muted); }
 
     .module-modal-label { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink); margin-bottom:.9rem; }
-    .module-content-list { display:flex; flex-direction:column; gap:.55rem; }
-    .module-content-item { display:flex; align-items:flex-start; gap:.65rem; font-size:.85rem; line-height:1.5; color:var(--ink); }
+
+    /* ── lista de conteúdos: entra em cascata quando o modal abre e
+       cada linha reage ao hover ────────────────────────────────────
+       O gatilho é a classe .entering do box, que o JS põe na abertura
+       e só tira no fechamento — então ela vale como "modal aberto".
+       Cada item recebe --i (índice) no JS, e daí sai o --d, o atraso
+       individual: os textos do topo entram primeiro (80–260ms) e os
+       itens da lista vêm em seguida, um a um. */
+    .module-content-list { display:flex; flex-direction:column; gap:.25rem; }
+
+    @keyframes moduleItemIn {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .module-modal-box.entering .module-modal-eyebrow { animation:moduleItemIn .45s cubic-bezier(.16,1,.3,1) .08s both; }
+    .module-modal-box.entering .module-modal-title   { animation:moduleItemIn .45s cubic-bezier(.16,1,.3,1) .14s both; }
+    .module-modal-box.entering .module-modal-sub     { animation:moduleItemIn .45s cubic-bezier(.16,1,.3,1) .20s both; }
+    .module-modal-box.entering .module-modal-label   { animation:moduleItemIn .45s cubic-bezier(.16,1,.3,1) .26s both; }
+
+    .module-content-item {
+      --d: calc(320ms + var(--i, 0) * 45ms);
+      display:flex; align-items:flex-start; gap:.7rem;
+      padding:.42rem .6rem;
+      margin-left:-.6rem; /* compensa o padding, mantém o alinhamento */
+      border:1px solid transparent;
+      border-radius:12px;
+      font-size:.85rem; line-height:1.5; color:var(--ink);
+      opacity:0;
+      /* o hover mexe só em cor/fundo/borda: transform aqui brigaria com
+         o "forwards" da animação de entrada, que trava a propriedade */
+      transition:background-color .3s ease, border-color .3s ease;
+    }
+    .module-modal-box.entering .module-content-item {
+      animation:moduleItemIn .4s cubic-bezier(.16,1,.3,1) var(--d) forwards;
+    }
+
     .module-content-item .item-dot {
-      width:20px; height:20px; border-radius:50%; margin-top:1px;
+      position:relative;
+      width:22px; height:22px; border-radius:50%; margin-top:0;
       background:rgba(47,213,90,.12); color:var(--green);
       display:flex; align-items:center; justify-content:center; flex-shrink:0;
+      transition:background-color .3s ease, color .3s ease;
     }
-    .module-content-item .item-dot svg { width:10px; height:10px; }
+    .module-content-item .item-dot svg {
+      width:11px; height:11px; overflow:visible;
+      transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    /* o traço do check é DESENHADO (stroke-dashoffset), não só aparece
+       junto com a linha — é o que dá a sensação de estar sendo
+       "marcado" um a um */
+    .module-content-item .item-dot path { stroke-dasharray:16; stroke-dashoffset:16; }
+    .module-modal-box.entering .item-dot path {
+      animation:moduleCheckDraw .35s ease calc(var(--d) + 130ms) forwards;
+    }
+    @keyframes moduleCheckDraw { to { stroke-dashoffset:0; } }
+
+    /* anel de ripple que sai do selo no hover */
+    .module-content-item .item-dot::after {
+      content:"";
+      position:absolute; inset:0; border-radius:50%;
+      border:1.5px solid var(--green);
+      opacity:0; pointer-events:none;
+    }
+    .module-content-item .item-text { transition:transform .3s cubic-bezier(.16,1,.3,1); }
+
+    .module-content-item:hover {
+      background:rgba(47,213,90,.08);
+      border-color:rgba(47,213,90,.3);
+    }
+    .module-content-item:hover .item-dot { background:var(--green); color:#fff; }
+    .module-content-item:hover .item-dot svg { transform:scale(1.18); }
+    .module-content-item:hover .item-dot::after { animation:moduleDotRipple .7s ease forwards; }
+    .module-content-item:hover .item-text { transform:translateX(3px); }
+    @keyframes moduleDotRipple {
+      from { opacity:.6; transform:scale(1); }
+      to   { opacity:0;  transform:scale(2);  }
+    }
+
+    /* ── conteúdo ainda NÃO concluído: mesmo check, só que cinza ─────
+       O ícone continua sendo desenhado (a animação é a mesma), mas em
+       tom neutro — assim a lista mostra de relance até onde a pessoa
+       chegou, em vez de fingir 100% em toda trilha. O hover também fica
+       cinza: pintar de verde aqui daria a entender que está feito. */
+    .module-content-item.is-pending { color:var(--muted); }
+    .module-content-item.is-pending .item-dot {
+      background:var(--field-fill);
+      color:var(--muted);
+      border:1px solid var(--field-stroke);
+    }
+    .module-content-item.is-pending .item-dot::after { border-color:var(--muted); }
+    .module-content-item.is-pending:hover {
+      background:rgba(107,114,128,.08);
+      border-color:var(--border);
+    }
+    .module-content-item.is-pending:hover .item-dot {
+      background:var(--muted); color:var(--white);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .module-content-item { opacity:1; }
+      .module-content-item .item-dot path { stroke-dashoffset:0; }
+      .module-modal-box.entering .module-modal-eyebrow,
+      .module-modal-box.entering .module-modal-title,
+      .module-modal-box.entering .module-modal-sub,
+      .module-modal-box.entering .module-modal-label,
+      .module-modal-box.entering .module-content-item,
+      .module-modal-box.entering .item-dot path,
+      .module-content-item:hover .item-dot::after { animation:none; }
+      .module-content-item:hover .item-dot svg,
+      .module-content-item:hover .item-text { transform:none; }
+    }
 
     /* ── floating theme-toggle button (injetado por themeSwitch.js) ── */
     .theme-toggle {
@@ -1209,6 +1460,13 @@
 
   const HORAS_POR_MODULO = 2 // estimativa usada só pra render das horas estudadas
 
+  /* Estado de progresso por trilha, preenchido no renderDashboard().
+     Antes o progresso era calculado lá dentro e jogado fora — por isso
+     o modal do módulo não tinha como saber de nada e pintava TODOS os
+     checks de verde, em qualquer trilha. Agora fica guardado aqui e o
+     modal lê daqui. Índice = mesmo índice de TRILHAS. */
+  const PROGRESSO = []
+
   /* ── gera um progresso "realista": algumas trilhas quase no fim,
      outras no começo, uma ou outra já concluída — em vez de tudo
      uniformemente aleatório (fica mais parecido com uso real) ── */
@@ -1231,9 +1489,22 @@
     const html = TRILHAS.map((t, idx) => {
       const progresso = gerarProgresso(idx)
       const totalModulos = t.modulos.length
-      const modulosFeitos = Math.min(totalModulos, Math.round((progresso / 100) * totalModulos))
+      // "exatos" é o progresso em unidades de módulo sem arredondar
+      // (ex.: 4.75 de 5). modulosFeitos continua sendo o arredondado,
+      // que é o que os checks do card usam; a PARTE FRACIONÁRIA é o que
+      // permite o modal mostrar o módulo em andamento pela metade.
+      const exatos = (progresso / 100) * totalModulos
+      const modulosFeitos = Math.min(totalModulos, Math.round(exatos))
       const horasTrilha = totalModulos * HORAS_POR_MODULO
       const horasFeitas = Math.round((progresso / 100) * horasTrilha)
+
+      PROGRESSO[idx] = {
+        progresso,
+        totalModulos,
+        modulosFeitos,
+        moduloAtual:  Math.min(totalModulos - 1, Math.floor(exatos)), // índice do que está em andamento
+        fracaoAtual:  exatos - Math.floor(exatos),                    // 0..1, o quanto dele já foi
+      }
 
       horasTotais += horasFeitas
       if (progresso >= 100) { concluidas++; certificados++ }
@@ -1504,13 +1775,43 @@
       const modulo = trilha && trilha.modulos[moduloIdx]
       if (!trilha || !modulo) return
 
-      moduleModalEyebrow.textContent = `Trilha de ${trilha.nome}`
+      /* ── estado real deste módulo, lido do PROGRESSO da trilha ──
+         Três situações, todas derivadas do MESMO modulosFeitos que os
+         checks do card usam — então card e modal nunca se contradizem:
+           • i <  modulosFeitos  → concluído: todos os tópicos verdes
+           • i == moduloAtual    → em andamento: uma parte verde,
+                                   proporcional ao quanto da trilha
+                                   já foi feito
+           • resto               → não iniciado: todos cinza          */
+      const p = PROGRESSO[trilhaIdx] || {}
+      const totalConteudos = modulo.conteudos.length
+
+      let status, conteudosFeitos
+      if (moduloIdx < (p.modulosFeitos || 0)) {
+        status = 'concluido'
+        conteudosFeitos = totalConteudos
+      } else if (moduloIdx === p.moduloAtual && p.progresso > 0 && p.progresso < 100) {
+        status = 'andamento'
+        conteudosFeitos = Math.round(totalConteudos * (p.fracaoAtual || 0))
+      } else {
+        status = 'pendente'
+        conteudosFeitos = 0
+      }
+
+      const rotuloStatus = { concluido:'Concluído', andamento:'Em andamento', pendente:'Não iniciado' }[status]
+
+      moduleModalEyebrow.textContent = `Trilha de ${trilha.nome} · ${p.progresso ?? 0}% concluída`
       moduleModalTitle.textContent   = modulo.nome
-      moduleModalSub.textContent     = `Módulo ${moduloIdx + 1} de ${trilha.modulos.length}`
-      moduleContentList.innerHTML = modulo.conteudos.map(c => `
-        <div class="module-content-item">
+      moduleModalSub.innerHTML =
+        `Módulo ${moduloIdx + 1} de ${trilha.modulos.length}` +
+        `<span class="module-status is-${status}">${rotuloStatus}</span>` +
+        `<span class="module-status-count">${conteudosFeitos} de ${totalConteudos} conteúdos</span>`
+
+      // o --i alimenta o --d do CSS, que escalona a entrada de cada linha
+      moduleContentList.innerHTML = modulo.conteudos.map((c, i) => `
+        <div class="module-content-item ${i < conteudosFeitos ? '' : 'is-pending'}" style="--i:${i}">
           <span class="item-dot"><svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <span>${c}</span>
+          <span class="item-text">${c}</span>
         </div>`).join('')
 
       // reseta o estado do "vídeo" toda vez que abre um módulo novo
