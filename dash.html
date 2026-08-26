@@ -42,8 +42,13 @@
       --green:  #2fd55a;
       --greend: #22b847;
       --orange: #f97316;
-      --bg:     #f5f6ff;
-      --white:  #ffffff;
+      /* tema claro em off-white/creme em vez de branco puro (mesmos
+         tokens do index.html): #ffffff em tela cheia é ofuscante, então
+         --white (as SUPERFÍCIES: cards, nav, seções claras) virou um
+         creme suave e --bg (o fundo da página) virou um creme um tom
+         abaixo, mantendo a mesma distância entre os dois. */
+      --bg:     #f2ebdc;
+      --white:  #fbf7ed;
       --muted:  #6b7280;
       --border: rgba(15,18,114,.14);
       --ink:    var(--navy);
@@ -123,7 +128,9 @@
     /* ── nav ─────────────────────────────────────────── */
     .nav {
       position:fixed; top:0; left:0; right:0; z-index:40;
-      background:rgba(255,255,255,.95);
+      /* creme translúcido, igual ao index (o alpha menor também deixa o
+         backdrop-filter abaixo realmente aparecer) */
+      background:rgba(251,247,237,.85);
       border-bottom:1px solid var(--border);
       backdrop-filter:blur(12px);
       -webkit-backdrop-filter:blur(12px);
