@@ -330,78 +330,302 @@
       position:fixed; inset:0; z-index:50;
       display:flex; align-items:center; justify-content:center;
       padding:1rem;
-      /* background:rgba(15,18,114,.5); */
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
+      /* um véu por cima do blur: sem ele o painel de vidro não tem
+         contraste pra "descolar" do fundo */
+      background:rgba(15,18,114,.22);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+    }
+    html.theme-dark .modal-wrap { background:rgba(2,3,15,.5); }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .modal-wrap { background:rgba(2,3,15,.5); }
     }
     .modal-wrap.entering { animation:fade-in .25s ease; }
     .modal-wrap.leaving  { animation:fade-out .25s ease forwards; }
 
+    /* ── tokens do vidro do modal ────────────────────────────────────
+       Ficam no próprio .modal-box (e não no :root) porque só ele e os
+       campos dentro dele usam — assim o painel, os inputs e os botões
+       sociais compartilham a mesma "receita" de vidro e mudam juntos
+       quando o tema troca. */
     .modal-box {
+      /* no claro o vidro é levemente creme, e não branco puro, pra
+         conversar com o resto do tema */
+      --glass-fill:    rgba(253,251,246,.58);
+      --glass-stroke:  rgba(255,255,255,.85);
+      --glass-sheen:   rgba(255,255,255,.9);
+      --field-fill:    rgba(255,255,255,.45);
+      --field-stroke:  rgba(15,18,114,.10);
+
       width:100%; max-width:22rem;
-      background:var(--white); border-radius:24px;
+      border-radius:26px;
       padding:2.5rem 2rem;
       position:relative;
-      box-shadow:0 24px 64px rgba(15,18,114,.2);
       overflow:hidden;
-      border: 2px solid rgba(250, 248, 248, 0.384)
+      --mx:50%; --my:50%; /* posição do cursor, atualizada via JS */
+
+      background:var(--glass-fill);
+      backdrop-filter:blur(28px) saturate(160%);
+      -webkit-backdrop-filter:blur(28px) saturate(160%);
+      border:1px solid var(--glass-stroke);
+      /* a sombra externa dá profundidade; o inset claro no topo é o
+         "brilho" da borda superior, que é o que faz o vidro parecer
+         vidro em vez de um retângulo translúcido */
+      box-shadow:0 24px 64px rgba(15,18,114,.28),
+                 inset 0 1px 0 var(--glass-sheen);
+    }
+    html.theme-dark .modal-box {
+      --glass-fill:    rgba(30,32,60,.55);
+      --glass-stroke:  rgba(255,255,255,.16);
+      --glass-sheen:   rgba(255,255,255,.14);
+      --field-fill:    rgba(255,255,255,.05);
+      --field-stroke:  rgba(255,255,255,.12);
+      box-shadow:0 24px 64px rgba(0,0,0,.5),
+                 inset 0 1px 0 var(--glass-sheen);
+    }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .modal-box {
+        --glass-fill:    rgba(30,32,60,.55);
+        --glass-stroke:  rgba(255,255,255,.16);
+        --glass-sheen:   rgba(255,255,255,.14);
+        --field-fill:    rgba(255,255,255,.05);
+        --field-stroke:  rgba(255,255,255,.12);
+        box-shadow:0 24px 64px rgba(0,0,0,.5),
+                   inset 0 1px 0 var(--glass-sheen);
+      }
     }
     .modal-box.entering { animation:modal-in  .3s  cubic-bezier(.34,1.56,.64,1) both; }
     .modal-box.leaving  { animation:modal-out .22s cubic-bezier(.4,0,1,1)       forwards; }
+
+    /* glow verde que segue o cursor — mesma assinatura de hover dos
+       cards do site (feature-card / trilha-card), pra que o modal
+       deixe de ser a única superfície "morta" da página */
+    .modal-box::before {
+      content:"";
+      position:absolute; inset:0;
+      border-radius:inherit;
+      background:radial-gradient(260px circle at var(--mx) var(--my), rgba(47,213,90,.10), transparent 70%);
+      opacity:0;
+      transition:opacity .4s ease;
+      pointer-events:none;
+    }
+    .modal-box:hover::before { opacity:1; }
+
+    /* os círculos decorativos eram manchas sólidas — num painel de
+       vidro isso destoa, então viram borrões de cor difusa */
+    .modal-box > .circle { filter:blur(20px); }
 
     .modal-close {
       position:absolute; top:1rem; right:1.25rem;
       font-size:1.2rem; line-height:1;
       color:#9ca3af; background:none; border:none;
-      transition:color .2s;
+      cursor:pointer;
+      transition:color .2s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
     }
-    .modal-close:hover { color:var(--ink); }
+    .modal-close:hover  { color:var(--green); transform:rotate(90deg) scale(1.15); }
+    .modal-close:active { transform:rotate(90deg) scale(.9); }
 
-    .modal-logo { display:flex; justify-content:center; margin-bottom:1.5rem; }
+    .modal-logo { display:flex; justify-content:center; margin-bottom:1.1rem; }
     .modal-logo img { height:56px; object-fit:contain; }
+    .modal-logo svg { transition:transform .5s cubic-bezier(.34,1.56,.64,1); }
+    .modal-box:hover .modal-logo svg { transform:translateY(-3px) scale(1.05); }
 
-    .modal-title { font-size:1.6rem; font-weight:700; margin-bottom:1.5rem; }
+    .modal-title { font-size:1.55rem; font-weight:700; text-align:center; }
+    .modal-sub {
+      text-align:center; font-size:.8rem; color:var(--muted);
+      margin:.35rem 0 1.5rem;
+    }
 
-    /* input field */
+    /* input field — mesma receita de vidro do painel, um degrau mais
+       escura, pra o campo "afundar" dentro dele */
     .input-wrap {
       display:flex; align-items:center; gap:.75rem;
-      border:1.5px solid var(--border); border-radius:50px;
-      padding:.75rem 1.25rem;
-      background:var(--white);
-      transition:border-color .2s;
+      border:1px solid var(--field-stroke); border-radius:50px;
+      padding:.8rem 1.25rem;
+      background:var(--field-fill);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      transition:border-color .25s ease, background-color .25s ease,
+                 box-shadow .3s ease, transform .25s cubic-bezier(.16,1,.3,1);
     }
-    .input-wrap:focus-within { border-color:var(--ink); }
-    .input-wrap svg { color:#9ca3af; flex-shrink:0; transition:color .2s; }
-    .input-wrap:focus-within svg { color:var(--ink); }
+    .input-wrap:hover { border-color:rgba(47,213,90,.45); }
+    /* foco: borda verde + halo, e o campo sobe 1px — dá a sensação de
+       "ativo" sem precisar de label flutuante (os campos usam
+       placeholder, não label) */
+    .input-wrap:focus-within {
+      border-color:var(--green);
+      box-shadow:0 0 0 4px rgba(47,213,90,.14);
+      transform:translateY(-1px);
+    }
+    .input-wrap svg {
+      color:#9ca3af; flex-shrink:0;
+      transition:color .25s ease, transform .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .input-wrap:focus-within svg { color:var(--green); transform:scale(1.12); }
     .input-wrap input {
       flex:1; border:none; outline:none; background:transparent;
       font-family:'Poppins',sans-serif; font-size:.875rem; color:var(--ink);
     }
-    .input-wrap input::placeholder { color:#9ca3af; }
+    .input-wrap input::placeholder { color:#9ca3af; transition:opacity .25s ease; }
+    .input-wrap:focus-within input::placeholder { opacity:.5; }
+
     .eye-btn {
       background:none; border:none; color:#9ca3af;
       display:flex; align-items:center; cursor:pointer;
-      flex-shrink:0; padding:0; transition:color .2s;
+      flex-shrink:0; padding:0;
+      transition:color .2s ease, transform .2s ease;
     }
-    .eye-btn:hover { color:var(--ink); }
+    .eye-btn:hover  { color:var(--green); transform:scale(1.15); }
+    .eye-btn:active { transform:scale(.9); }
+    /* o SVG é trocado via JS; a classe .swap (posta e removida no
+       mesmo clique) roda uma "piscada": o ícone é esmagado na
+       vertical e volta, como uma pálpebra fechando — combina com o
+       que o botão faz e não usa giro nenhum */
+    .eye-btn.swap svg { animation:eyeBlink .32s cubic-bezier(.4,0,.2,1); }
+    @keyframes eyeBlink {
+      0%   { transform:scaleY(1)   scaleX(1);    opacity:1;  }
+      45%  { transform:scaleY(.12) scaleX(1.08); opacity:.5; }
+      100% { transform:scaleY(1)   scaleX(1);    opacity:1;  }
+    }
 
+    /* links (esqueceu a senha / registre-se): sublinhado verde que
+       cresce da esquerda pra direita */
     .forgot { text-align:right; }
-    .forgot a { font-size:.8rem; font-weight:600; color:var(--ink); }
-
-    .divider { text-align:center; font-size:.8rem; color:var(--muted); margin:.25rem 0; }
-
-    .social-row { display:flex; justify-content:center; gap:.75rem; }
-    .social-btn {
-      width:44px; height:44px; border-radius:50%;
-      border:1.5px solid var(--border); background:var(--white);
-      font-weight:700; font-size:.85rem;
-      display:flex; align-items:center; justify-content:center;
-      transition:border-color .2s;
+    .forgot a,
+    .modal-footer a {
+      position:relative;
+      font-weight:700; color:var(--ink);
+      transition:color .25s ease;
     }
-    .social-btn:hover { border-color:var(--ink); }
+    .forgot a { font-size:.8rem; font-weight:600; }
+    .forgot a::after,
+    .modal-footer a::after {
+      content:"";
+      position:absolute; left:0; right:0; bottom:-3px;
+      height:2px; border-radius:2px;
+      background:var(--green);
+      transform:scaleX(0); transform-origin:left;
+      transition:transform .3s cubic-bezier(.16,1,.3,1);
+    }
+    .forgot a:hover,
+    .modal-footer a:hover { color:var(--green); }
+    .forgot a:hover::after,
+    .modal-footer a:hover::after { transform:scaleX(1); }
+
+    /* "Ou registre-se com" agora vem entre dois filetes */
+    .divider {
+      display:flex; align-items:center; gap:.75rem;
+      font-size:.8rem; color:var(--muted); margin:.25rem 0;
+    }
+    .divider::before,
+    .divider::after { content:""; flex:1; height:1px; background:var(--field-stroke); }
+
+    /* Google e LinkedIn como botões largos (em vez dos 4 círculos de
+       antes): a cor da marca vem do --brand no style inline de cada um,
+       então borda, glow e o brilho do hover saem certos sem uma regra
+       por rede. */
+    .social-row { display:flex; flex-direction:column; gap:.6rem; }
+    .social-btn {
+      position:relative; overflow:hidden;
+      width:100%;
+      display:flex; align-items:center; justify-content:center; gap:.6rem;
+      padding:.72rem 1rem;
+      border-radius:50px;
+      border:1px solid var(--field-stroke);
+      background:var(--field-fill);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      color:var(--ink); font-weight:600; font-size:.82rem;
+      cursor:pointer;
+      transition:border-color .25s ease, background-color .25s ease,
+                 box-shadow .3s ease, transform .25s cubic-bezier(.16,1,.3,1);
+    }
+    .social-btn svg { width:17px; height:17px; flex-shrink:0; }
+    /* mesmo brilho que varre do botão principal, mantendo a assinatura */
+    .social-btn::after {
+      content:"";
+      position:absolute; top:0; bottom:0; left:-45%;
+      width:45%;
+      background:linear-gradient(100deg, transparent, var(--glass-sheen), transparent);
+      transform:skewX(-18deg);
+      opacity:0; pointer-events:none;
+    }
+    .social-btn:hover {
+      border-color:var(--brand, var(--green));
+      transform:translateY(-2px);
+      box-shadow:0 10px 24px -10px var(--brand, var(--green));
+    }
+    .social-btn:hover::after { animation:btnShine .8s ease; }
+    .social-btn:active { transform:translateY(0) scale(.98); }
 
     .modal-footer { text-align:center; font-size:.8rem; color:var(--muted); margin-top:1.25rem; }
     .modal-footer a { color:var(--ink); font-weight:700; }
+
+    /* ── botão de login: brilho que varre no hover + estados de envio
+       (spinner -> check) antes de fechar o modal, só pra o clique ter
+       retorno visual em vez de fechar seco ── */
+    .modal-box .btn-green {
+      position:relative; overflow:hidden;
+      transition:background .2s ease, box-shadow .3s ease,
+                 transform .2s cubic-bezier(.16,1,.3,1);
+    }
+    .modal-box .btn-green::after {
+      content:"";
+      position:absolute; top:0; bottom:0; left:-45%;
+      width:45%;
+      background:linear-gradient(100deg, transparent, rgba(255,255,255,.38), transparent);
+      transform:skewX(-18deg);
+      opacity:0; pointer-events:none;
+    }
+    .modal-box .btn-green:hover {
+      transform:translateY(-2px);
+      box-shadow:0 10px 26px rgba(47,213,90,.45);
+    }
+    .modal-box .btn-green:hover::after { animation:btnShine .8s ease; }
+    .modal-box .btn-green:active { transform:translateY(0) scale(.98); }
+    @keyframes btnShine {
+      from { left:-45%; opacity:1; }
+      to   { left:125%; opacity:1; }
+    }
+
+    .btn-green.is-loading { pointer-events:none; }
+    .btn-green .btn-label { transition:opacity .2s ease; }
+    .btn-green.is-loading .btn-label,
+    .btn-green.is-done    .btn-label { opacity:0; }
+    .btn-spinner, .btn-check {
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      opacity:0; pointer-events:none;
+      transition:opacity .2s ease;
+    }
+    .btn-green.is-loading .btn-spinner { opacity:1; }
+    .btn-green.is-done    .btn-check   { opacity:1; }
+    .btn-spinner i {
+      width:18px; height:18px; border-radius:50%;
+      border:2.5px solid rgba(255,255,255,.35);
+      border-top-color:#fff;
+      animation:btnSpin .6s linear infinite;
+    }
+    @keyframes btnSpin { to { transform:rotate(360deg); } }
+    .btn-green.is-done .btn-check svg { animation:btnCheckPop .35s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes btnCheckPop {
+      from { transform:scale(.4); opacity:0; }
+      to   { transform:scale(1);  opacity:1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .modal-box::before,
+      .modal-box:hover .modal-logo svg,
+      .modal-close:hover,
+      .input-wrap:focus-within,
+      .input-wrap:focus-within svg,
+      .eye-btn:hover,
+      .social-btn:hover { transform:none; }
+      .eye-btn.swap svg,
+      .social-btn:hover::after,
+      .modal-box .btn-green:hover::after { animation:none; }
+      .modal-box .btn-green:hover { transform:none; }
+    }
 
     /* ── hero ────────────────────────────────────────── */
     .hero {
@@ -1152,16 +1376,12 @@
     html.theme-dark svg [fill="#0f1272"] { fill: var(--ink); }
     html.theme-dark svg [fill="#090b52"] { fill: #4b4f8f; }
 
-    /* the "X" social button uses inline style="color:#000" — invisible on a dark card */
-    html.theme-dark .social-btn[style*="#000"] { color: #fff !important; }
-
     @media (prefers-color-scheme: dark) {
       html.theme-auto .nav { background: rgba(18,19,43,.85); }
       html.theme-auto .testimonial-quote,
       html.theme-auto .plan-card:not(.highlight) .plan-features li { color: #c7c9e8; }
       html.theme-auto svg [fill="#0f1272"] { fill: var(--ink); }
       html.theme-auto svg [fill="#090b52"] { fill: #4b4f8f; }
-      html.theme-auto .social-btn[style*="#000"] { color: #fff !important; }
     }
 
     /* smooth cross-fade on theme switch for surfaces without their own transition */
@@ -1326,7 +1546,8 @@ html.theme-dark .hamburger {
       </svg>
     </div>
 
-    <h2 class="modal-title">Login</h2>
+    <h2 class="modal-title">Entrar</h2>
+    <p class="modal-sub">Acesse sua conta para continuar de onde parou.</p>
 
     <div style="display:flex;flex-direction:column;gap:1rem;">
       <div class="input-wrap">
@@ -1343,13 +1564,30 @@ html.theme-dark .hamburger {
         </button>
       </div>
       <div class="forgot"><a href="#">Esqueceu sua senha?</a></div>
-      <button class="btn-green full" onclick="closeLogin()">Login</button>
-      <p class="divider">Ou registre-se com</p>
+      <button class="btn-green full" id="loginSubmit" type="button">
+        <span class="btn-label">Login</span>
+        <span class="btn-spinner" aria-hidden="true"><i></i></span>
+        <span class="btn-check" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </button>
+      <p class="divider">ou</p>
       <div class="social-row">
-        <button class="social-btn" style="color:#ea4335">G</button>
-        <button class="social-btn" style="color:#1877f2">f</button>
-        <button class="social-btn" style="color:#000">X</button>
-        <button class="social-btn" style="color:#0a66c2">in</button>
+        <button class="social-btn" type="button" style="--brand:#ea4335">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#ffc107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.7-.4-3.9z"/>
+            <path fill="#ff3d00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+            <path fill="#4caf50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.5-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976d2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.7-.4-3.9z"/>
+          </svg>
+          Continuar com Google
+        </button>
+        <button class="social-btn" type="button" style="--brand:#0a66c2">
+          <svg viewBox="0 0 24 24" fill="#0a66c2" aria-hidden="true">
+            <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/>
+          </svg>
+          Continuar com LinkedIn
+        </button>
       </div>
       <p class="modal-footer">Não tem uma conta? <a href="#">Registre-se</a></p>
     </div>
@@ -2101,6 +2339,8 @@ html.theme-dark .hamburger {
     loginModal.offsetHeight  // reflow
     loginModal.classList.remove('leaving');  loginBox.classList.remove('leaving')
     loginModal.classList.add('entering');    loginBox.classList.add('entering')
+    // cursor já no primeiro campo, depois da animação de entrada
+    setTimeout(() => document.getElementById('loginEmail').focus(), 320)
   }
   function closeLogin() {
     loginModal.classList.remove('entering'); loginBox.classList.remove('entering')
@@ -2114,16 +2354,69 @@ html.theme-dark .hamburger {
   document.getElementById('navLoginBtn').addEventListener('click', openLogin)
   document.getElementById('loginClose').addEventListener('click', closeLogin)
   loginModal.addEventListener('click', e => { if (e.target === loginModal) closeLogin() })
+  // Esc fecha o modal (só quando ele está aberto)
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && loginModal.style.display === 'flex') closeLogin()
+  })
+
+  /* ── glow do modal seguindo o cursor (alimenta o --mx/--my usado
+     pelo .modal-box::before) ────────────────────────── */
+  loginBox.addEventListener('mousemove', e => {
+    const r = loginBox.getBoundingClientRect()
+    loginBox.style.setProperty('--mx', `${e.clientX - r.left}px`)
+    loginBox.style.setProperty('--my', `${e.clientY - r.top}px`)
+  })
+
+  /* ── botão de login: spinner -> check -> redireciona ───────────────
+     Não há back-end. Pra apresentação, o "login" leva pro
+     lidera360.html, que é uma cópia desta página SEM os botões de
+     entrar / começar grátis — ou seja, a mesma home no estado
+     "logado". O atraso do spinner é só pro clique ter retorno visual
+     em vez de a página trocar seca. ─────────────────────────────── */
+  const PAGINA_LOGADA = 'lidera360.html'
+
+  ;(function () {
+    const btn = document.getElementById('loginSubmit')
+    if (!btn) return
+
+    btn.addEventListener('click', () => {
+      // ignora cliques repetidos enquanto a sequência está rodando
+      if (btn.classList.contains('is-loading') || btn.classList.contains('is-done')) return
+
+      btn.classList.add('is-loading')
+      setTimeout(() => {
+        btn.classList.remove('is-loading')
+        btn.classList.add('is-done')
+        setTimeout(() => { window.location.href = PAGINA_LOGADA }, 550)
+      }, 800)
+    })
+  })()
+
+  /* os botões de Google/LinkedIn fazem parte do mesmo painel, então
+     levam pro mesmo lugar — direto, sem o spinner */
+  document.querySelectorAll('.social-btn').forEach(btn => {
+    btn.addEventListener('click', () => { window.location.href = PAGINA_LOGADA })
+  })
 
   /* ── eye toggle ───────────────────────────────────── */
   let passVisible = false
-  document.getElementById('eyeBtn').addEventListener('click', () => {
+  document.getElementById('eyeBtn').addEventListener('click', (e) => {
     passVisible = !passVisible
     const input = document.getElementById('loginPassword')
     input.type = passVisible ? 'text' : 'password'
     document.getElementById('eyeIcon').innerHTML = passVisible
       ? `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`
       : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`
+
+    // "flip" curto no ícone: a classe é removida no fim da animação
+    const eyeBtn = e.currentTarget
+    eyeBtn.classList.remove('swap')
+    void eyeBtn.offsetWidth // reflow, permite reiniciar a animação em cliques rápidos
+    eyeBtn.classList.add('swap')
+    setTimeout(() => eyeBtn.classList.remove('swap'), 340)
+
+    // devolve o foco pro campo, pra continuar digitando direto
+    input.focus()
   })
 
   /* ── init ─────────────────────────────────────────── */
