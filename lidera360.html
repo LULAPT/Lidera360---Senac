@@ -70,6 +70,18 @@
       --ink:    var(--navy);
       /* fundo translúcido usado no efeito "glass" do feature-card no hover */
       --glass-bg: rgba(251,247,237,.55);
+      /* borda e brilho do vidro, pra não repetir os mesmos rgba soltos
+         em cada componente que usa blur */
+      --glass-stroke: rgba(15,18,114,.10);
+      --glass-sheen:  rgba(255,255,255,.55);
+      /* sombra "de superfície": usada nos cards que levitam sobre o
+         fundo. No claro é o navy; no escuro vira preto puro, porque
+         sombra colorida sobre fundo escuro só suja a cor. */
+      --shadow-lift: rgba(15,18,114,.15);
+      /* cores das bolinhas decorativas do fundo. As de navy precisavam
+         de token próprio: no tema escuro, navy sobre #12132b some. */
+      --circle-navy:     rgba(15,18,114,.04);
+      --circle-navy-dot: #0f1272;
     }
 
     /* ── dark theme tokens ───────────────────────────
@@ -83,6 +95,11 @@
       --navyd:  #05061c;
       --ink:    #eef0ff;
       --glass-bg: rgba(27,28,58,.55);
+      --glass-stroke: rgba(255,255,255,.12);
+      --glass-sheen:  rgba(255,255,255,.16);
+      --shadow-lift:  rgba(0,0,0,.45);
+      --circle-navy:     rgba(143,150,255,.07);
+      --circle-navy-dot: #6f75c9;
     }
     @media (prefers-color-scheme: dark) {
       html.theme-auto {
@@ -93,6 +110,11 @@
         --navyd:  #05061c;
         --ink:    #eef0ff;
         --glass-bg: rgba(27,28,58,.55);
+        --glass-stroke: rgba(255,255,255,.12);
+        --glass-sheen:  rgba(255,255,255,.16);
+        --shadow-lift:  rgba(0,0,0,.45);
+        --circle-navy:     rgba(143,150,255,.07);
+        --circle-navy-dot: #6f75c9;
       }
     }
 
@@ -114,10 +136,43 @@
     @media(min-width:769px){ .hide-mobile{ display:flex; } }
 
     /* ── decorative circles ─────────────────────────── */
+    /* ── bolinhas decorativas do fundo ────────────────────
+       Antes eram 100% estáticas. Agora cada uma deriva no seu próprio
+       caminho (três variantes com durações que não fecham ciclo juntas,
+       pra nunca sincronizarem) e ainda ganha profundidade no scroll.
+
+       O scroll escreve a propriedade `translate`, e não `transform`:
+       são propriedades DIFERENTES, então o parallax do JS e a animação
+       de deriva daqui se compõem em vez de uma sobrescrever a outra —
+       que é o que aconteceria se as duas disputassem `transform`. */
     .circle {
       position:absolute;
       border-radius:50%;
       pointer-events:none;
+      will-change:transform;
+      animation:circleDriftA 26s ease-in-out infinite;
+    }
+    .circle.drift-b { animation-name:circleDriftB; animation-duration:33s; }
+    .circle.drift-c { animation-name:circleDriftC; animation-duration:41s; }
+
+    @keyframes circleDriftA {
+      0%, 100% { transform:translate(0,0)        scale(1);    }
+      33%      { transform:translate(20px,-24px) scale(1.07); }
+      66%      { transform:translate(-15px,13px) scale(.95);  }
+    }
+    @keyframes circleDriftB {
+      0%, 100% { transform:translate(0,0)        scale(1);    }
+      40%      { transform:translate(-26px,18px) scale(1.09); }
+      70%      { transform:translate(13px,-20px) scale(.93);  }
+    }
+    @keyframes circleDriftC {
+      0%, 100% { transform:translate(0,0)        scale(1);    }
+      25%      { transform:translate(16px,22px)  scale(.94);  }
+      60%      { transform:translate(-22px,-15px) scale(1.08); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .circle { animation:none; translate:none !important; }
     }
 
     /* ── buttons ────────────────────────────────────── */
@@ -634,13 +689,37 @@
     }
     @media(min-width:769px){ .hero{ padding:9rem 0 6rem; } }
 
+    /* mesma pílula de vidro do .section-eyebrow, só que com o tint
+       verde por cima do blur (é o selo principal da página) */
     .hero-badge {
       display:inline-flex; align-items:center; gap:.5rem;
-      background:rgba(47,213,90,.12); border-radius:50px;
-      padding:.35rem 1rem; margin-bottom:1.5rem;
+      border-radius:50px;
+      background:linear-gradient(rgba(47,213,90,.12), rgba(47,213,90,.12)), var(--glass-bg);
+      border:1px solid var(--glass-stroke);
+      backdrop-filter:blur(12px) saturate(150%);
+      -webkit-backdrop-filter:blur(12px) saturate(150%);
+      box-shadow:inset 0 1px 0 var(--glass-sheen);
+      padding:.4rem 1rem; margin-bottom:1.5rem;
       font-size:.75rem; font-weight:600; color:var(--ink);
     }
-    .badge-dot { width:8px; height:8px; border-radius:50%; background:var(--green); display:inline-block; }
+    .badge-dot {
+      width:8px; height:8px; border-radius:50%;
+      background:var(--green); display:inline-block; flex-shrink:0;
+      position:relative;
+    }
+    /* anel que pulsa devagar — sinal de "ao vivo" no selo do hero */
+    .badge-dot::after {
+      content:""; position:absolute; inset:0;
+      border-radius:50%; border:1.5px solid var(--green);
+      animation:badgeDotPulse 2.8s cubic-bezier(.2,.6,.3,1) infinite;
+    }
+    @keyframes badgeDotPulse {
+      0%   { opacity:.6; transform:scale(1); }
+      100% { opacity:0;  transform:scale(2.6); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .badge-dot::after { animation:none; opacity:0; }
+    }
 
     .hero-title {
       font-size:clamp(2.4rem,6vw,4.5rem);
@@ -675,19 +754,45 @@
     }
     .hero-img-wrap {
       border-radius:24px; overflow:hidden;
-      box-shadow:0 24px 60px rgba(15,18,114,.15);
+      box-shadow:0 24px 60px var(--shadow-lift);
       border:2px solid var(--border);
     }
     .hero-img { width:100%; height:340px; object-fit:cover; display:block; }
 
+    /* as pílulas flutuam SOBRE a foto do hero — vidro de verdade aqui
+       vale a pena, porque tem imagem por baixo pra ser borrada (é o
+       caso em que backdrop-filter realmente aparece). Também passaram
+       a flutuar de leve, cada uma no seu ritmo. */
     .hero-pill {
       position:absolute;
-      background:var(--white); border-radius:16px;
-      box-shadow:0 8px 32px rgba(15,18,114,.15);
-      border:1px solid var(--border);
+      border-radius:16px;
+      background:var(--glass-bg);
+      border:1px solid var(--glass-stroke);
+      backdrop-filter:blur(16px) saturate(160%);
+      -webkit-backdrop-filter:blur(16px) saturate(160%);
+      box-shadow:0 8px 32px var(--shadow-lift),
+                 inset 0 1px 0 var(--glass-sheen);
+      will-change:transform;
     }
-    .hero-pill-1 { bottom:-20px; left:24px; padding:.875rem 1.25rem; }
-    .hero-pill-2 { top:-16px;    right:24px; padding:.75rem 1.125rem; background:var(--navy); border-color:transparent; }
+    .hero-pill-1 {
+      bottom:-20px; left:24px; padding:.875rem 1.25rem;
+      animation:pillFloat 7s ease-in-out infinite;
+    }
+    .hero-pill-2 {
+      top:-16px; right:24px; padding:.75rem 1.125rem;
+      background:linear-gradient(rgba(15,18,114,.82), rgba(15,18,114,.82));
+      border-color:rgba(255,255,255,.14);
+      box-shadow:0 8px 32px var(--shadow-lift),
+                 inset 0 1px 0 rgba(255,255,255,.18);
+      animation:pillFloat 9s ease-in-out infinite reverse;
+    }
+    @keyframes pillFloat {
+      0%, 100% { transform:translateY(0); }
+      50%      { transform:translateY(-7px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-pill-1, .hero-pill-2 { animation:none; }
+    }
 
     .pill-val  { font-size:1.8rem; font-weight:800; color:var(--green); line-height:1; }
     .pill-val2 { font-size:1.4rem; font-weight:800; color:#fff; line-height:1; }
@@ -720,7 +825,29 @@
     /* ── courses ─────────────────────────────────────── */
     .courses-section { background:var(--white); padding:5rem 0; position:relative; overflow:hidden; }
 
-    .section-eyebrow { font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:.5rem; }
+    /* o eyebrow deixou de ser texto solto e virou uma pílula de vidro
+       com o mesmo ponto verde do .hero-badge — assim TODA seção abre
+       com a mesma assinatura visual, em vez de o hero ter um selo
+       bonito e o resto do site um textinho em caixa alta. */
+    .section-eyebrow {
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.35rem .9rem .35rem .7rem;
+      border-radius:50px;
+      background:var(--glass-bg);
+      border:1px solid var(--glass-stroke);
+      backdrop-filter:blur(12px) saturate(150%);
+      -webkit-backdrop-filter:blur(12px) saturate(150%);
+      box-shadow:inset 0 1px 0 var(--glass-sheen);
+      font-size:.72rem; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--green);
+      margin-bottom:.85rem;
+    }
+    .section-eyebrow::before {
+      content:""; flex-shrink:0;
+      width:6px; height:6px; border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 0 3px rgba(47,213,90,.18);
+    }
 
     .section-title {
       font-size:clamp(1.6rem,3.5vw,2.4rem);
@@ -1075,6 +1202,20 @@
       .about-list li:hover { transform:none; }
     }
 
+    /* assinatura do projeto, tratada como citação de destaque (é assim
+       que ela aparece no slide 4 da apresentação) */
+    .about-slogan {
+      margin:0 0 1.75rem;
+      padding:.9rem 1.25rem;
+      border-radius:0 14px 14px 0;
+      border-left:3px solid var(--green);
+      background:var(--glass-bg);
+      backdrop-filter:blur(12px) saturate(150%);
+      -webkit-backdrop-filter:blur(12px) saturate(150%);
+      font-size:1.05rem; font-weight:700; font-style:italic;
+      color:var(--ink); letter-spacing:-.01em;
+    }
+
     .about-video-frame {
       position:relative;
       isolation:isolate;
@@ -1125,14 +1266,288 @@
       position:relative; width:100%;
       aspect-ratio:16/9;
       border-radius:24px; overflow:hidden;
-      box-shadow:0 24px 60px rgba(15,18,114,.15);
+      box-shadow:0 24px 60px var(--shadow-lift);
       border:2px solid var(--border);
       background:var(--navyd);
     }
-    .about-video-wrap iframe {
+    .about-video-wrap video {
       position:absolute; inset:0;
       width:100%; height:100%;
+      /* contain (e não cover): o arquivo vem do celular, então a
+         proporção pode não ser 16/9 — assim nada é cortado, e a sobra
+         fica no navy do fundo, como se fosse moldura */
+      object-fit:contain;
       border:none; display:block;
+      cursor:pointer;
+    }
+
+    /* escurece levemente o vídeo enquanto pausado, pra garantir contraste
+       do botão de play em cima de qualquer frame claro — some assim que
+       o vídeo começa a tocar */
+    .about-video-scrim {
+      position:absolute; inset:0;
+      background:radial-gradient(circle at center, rgba(9,11,82,.35), rgba(9,11,82,0) 65%);
+      opacity:1; transition:opacity .35s ease;
+      pointer-events:none;
+    }
+    .about-video-wrap.is-playing .about-video-scrim { opacity:0; }
+
+    /* ── botão de play/pause do vídeo — mesmo botão usado no placeholder
+       de vídeo dos módulos no dash (.module-video-toggle), copiado aqui
+       pra manter a assinatura visual unilateral entre as duas páginas.
+       Só a posição muda: lá ele fica centralizado por flex no
+       placeholder; aqui é posicionado absoluto por cima do vídeo real. */
+    .module-video-toggle {
+      width:68px; height:68px; border-radius:50%;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.42);
+      backdrop-filter:blur(10px) saturate(140%);
+      -webkit-backdrop-filter:blur(10px) saturate(140%);
+      display:grid; place-items:center;
+      color:#fff; position:relative; z-index:1;
+      box-shadow:0 8px 28px rgba(0,0,0,.28),
+                 inset 0 1px 0 rgba(255,255,255,.45);
+      transition:background-color .3s ease, border-color .3s ease,
+                 box-shadow .3s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .module-video-toggle:hover {
+      background:rgba(255,255,255,.22);
+      border-color:#fff;
+      transform:scale(1.08);
+      box-shadow:0 12px 34px rgba(0,0,0,.34),
+                 0 0 0 6px rgba(47,213,90,.18),
+                 inset 0 1px 0 rgba(255,255,255,.55);
+    }
+    .module-video-toggle:active { transform:scale(.94); }
+    .module-video-toggle svg {
+      grid-area:1 / 1;
+      width:24px; height:24px;
+      transition:opacity .25s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .module-video-toggle .icon-play  { transform:translateX(2px); }
+    .module-video-toggle .icon-pause { opacity:0; transform:scale(.6); }
+    .module-video-toggle.is-playing .icon-play  { opacity:0; transform:scale(.6); }
+    .module-video-toggle.is-playing .icon-pause { opacity:1; transform:scale(1); }
+    .module-video-toggle::before,
+    .module-video-toggle::after {
+      content:"";
+      position:absolute; inset:0;
+      border-radius:50%;
+      border:1.5px solid rgba(255,255,255,.5);
+      pointer-events:none;
+      animation:videoPulseRing 2.6s cubic-bezier(.2,.6,.3,1) infinite;
+    }
+    .module-video-toggle::after { animation-delay:1.3s; }
+    .module-video-toggle.is-playing::before,
+    .module-video-toggle.is-playing::after { animation:none; opacity:0; }
+    @keyframes videoPulseRing {
+      0%   { opacity:.5; transform:scale(1);   }
+      100% { opacity:0;  transform:scale(1.9); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .module-video-toggle::before,
+      .module-video-toggle::after { animation:none; opacity:0; }
+      .module-video-toggle:hover  { transform:none; }
+    }
+
+    /* posicionamento específico do botão aqui: centralizado por cima
+       do vídeo (mesma especificidade das regras acima, então por ordem
+       de declaração estas ganham) */
+    .about-video-toggle {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      z-index:2;
+    }
+    .about-video-toggle:hover { transform:translate(-50%,-50%) scale(1.08); }
+    .about-video-toggle:active { transform:translate(-50%,-50%) scale(.94); }
+    /* acrescenta opacity à transição herdada, pra ele poder sumir junto
+       com a barra de controles durante a reprodução */
+    .about-video-toggle {
+      transition:opacity .3s ease, background-color .3s ease, border-color .3s ease,
+                 box-shadow .3s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    /* ── barra de controles do player ──────────────────────────────
+       Mesma linguagem de vidro do botão central (blur + borda fina +
+       verde da marca no progresso). Fica sempre visível com o vídeo
+       pausado; durante a reprodução aparece no hover/foco e some
+       sozinha depois de alguns segundos parada — junto com o botão
+       central, pra não tampar o vídeo. */
+    .about-video-controls {
+      position:absolute; left:0; right:0; bottom:0;
+      z-index:3;
+      padding:2.75rem .85rem .85rem;
+      display:flex; flex-direction:column; gap:.5rem;
+      /* degradê garante leitura dos controles sobre qualquer frame */
+      background:linear-gradient(to top,
+                 rgba(5,6,28,.85) 0%, rgba(5,6,28,.5) 45%, rgba(5,6,28,0) 100%);
+      transition:opacity .3s ease, transform .3s ease;
+    }
+    .about-video-wrap.is-playing:not(.controls-visible) .about-video-controls {
+      opacity:0; transform:translateY(10px); pointer-events:none;
+    }
+    .about-video-wrap.is-playing:not(.controls-visible) .about-video-toggle {
+      opacity:0; pointer-events:none; transform:translate(-50%,-50%) scale(.9);
+    }
+    .about-video-wrap.is-playing:not(.controls-visible) video { cursor:none; }
+
+    /* ── barra de progresso (o "timestamp" pra ir e voltar) ───────── */
+    .about-progress {
+      position:relative;
+      height:16px;          /* área de clique/arraste confortável */
+      display:flex; align-items:center;
+      cursor:pointer;
+      touch-action:none;    /* deixa arrastar no toque sem rolar a página */
+    }
+    /* o contorno verde de foco vem da regra global de acessibilidade lá
+       do topo do CSS; aqui só arredondamos pra ele acompanhar a pílula */
+    .about-progress:focus-visible { border-radius:50px; outline-offset:4px; }
+    .about-progress-track {
+      position:relative; width:100%; height:4px;
+      border-radius:50px; overflow:hidden;
+      background:rgba(255,255,255,.22);
+      transition:height .2s ease;
+    }
+    .about-progress:hover .about-progress-track,
+    .about-progress:focus-visible .about-progress-track,
+    .about-progress.is-scrubbing .about-progress-track { height:6px; }
+    .about-progress-buffered,
+    .about-progress-fill {
+      position:absolute; left:0; top:0; bottom:0;
+      border-radius:50px; width:0;
+    }
+    .about-progress-buffered { background:rgba(255,255,255,.28); }
+    .about-progress-fill {
+      background:var(--green);
+      box-shadow:0 0 10px rgba(47,213,90,.55);
+    }
+    /* a bolinha vive FORA do track (que tem overflow:hidden) pra não
+       ser cortada nas pontas */
+    .about-progress-thumb {
+      position:absolute; top:50%; left:0;
+      width:12px; height:12px; border-radius:50%;
+      background:#fff; pointer-events:none;
+      box-shadow:0 2px 8px rgba(0,0,0,.45), 0 0 0 4px rgba(47,213,90,.25);
+      transform:translate(-50%,-50%) scale(0);
+      transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .about-progress:hover .about-progress-thumb,
+    .about-progress:focus-visible .about-progress-thumb,
+    .about-progress.is-scrubbing .about-progress-thumb { transform:translate(-50%,-50%) scale(1); }
+    /* etiqueta com o tempo do ponto sob o cursor */
+    .about-progress-tip {
+      position:absolute; bottom:calc(100% + 4px); left:0;
+      transform:translateX(-50%);
+      padding:.2rem .45rem; border-radius:7px;
+      font-size:.68rem; font-weight:700; color:#fff;
+      font-variant-numeric:tabular-nums;
+      background:rgba(5,6,28,.85);
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+      white-space:nowrap; pointer-events:none;
+      opacity:0; transition:opacity .18s ease;
+    }
+    .about-progress:hover .about-progress-tip,
+    .about-progress.is-scrubbing .about-progress-tip { opacity:1; }
+
+    /* ── linha de botões ─────────────────────────────────────────── */
+    .about-controls-row { display:flex; align-items:center; gap:.4rem; color:#fff; }
+    .about-controls-spacer { flex:1; }
+
+    .about-ctrl {
+      width:34px; height:34px; border-radius:50%;
+      display:grid; place-items:center;
+      flex-shrink:0; color:#fff;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.22);
+      backdrop-filter:blur(8px) saturate(140%);
+      -webkit-backdrop-filter:blur(8px) saturate(140%);
+      transition:background-color .25s ease, border-color .25s ease,
+                 transform .25s cubic-bezier(.34,1.56,.64,1);
+    }
+    .about-ctrl:hover {
+      background:rgba(255,255,255,.22);
+      border-color:rgba(255,255,255,.55);
+      transform:scale(1.1);
+    }
+    .about-ctrl:active { transform:scale(.92); }
+    .about-ctrl svg {
+      grid-area:1 / 1; width:16px; height:16px;
+      transition:opacity .25s ease, transform .25s cubic-bezier(.34,1.56,.64,1);
+    }
+    /* cross-fade dos pares de ícone (mesma técnica do botão central) */
+    .about-ctrl .icon-play  { transform:translateX(1px); }
+    .about-ctrl .icon-pause,
+    .about-ctrl .icon-vol-off,
+    .about-ctrl .icon-fs-exit { opacity:0; transform:scale(.6); }
+    .about-ctrl.is-playing .icon-play { opacity:0; transform:scale(.6); }
+    .about-ctrl.is-playing .icon-pause { opacity:1; transform:scale(1); }
+    .about-ctrl.is-muted .icon-vol-on { opacity:0; transform:scale(.6); }
+    .about-ctrl.is-muted .icon-vol-off { opacity:1; transform:scale(1); }
+    .about-video-wrap.is-fullscreen .about-ctrl .icon-fs-enter { opacity:0; transform:scale(.6); }
+    .about-video-wrap.is-fullscreen .about-ctrl .icon-fs-exit  { opacity:1; transform:scale(1); }
+
+    /* ── tempo corrente / duração ────────────────────────────────── */
+    .about-time {
+      font-size:.72rem; font-weight:700;
+      color:rgba(255,255,255,.95);
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap; margin-left:.2rem;
+      text-shadow:0 1px 3px rgba(0,0,0,.45);
+    }
+    .about-time .time-sep   { opacity:.45; margin:0 .18rem; }
+    .about-time .time-total { color:rgba(255,255,255,.62); }
+
+    /* ── volume: o slider abre no hover/foco do grupo ────────────── */
+    .about-volume { display:flex; align-items:center; gap:.3rem; }
+    .about-volume-slider {
+      --vol:100%;
+      -webkit-appearance:none; appearance:none;
+      width:0; opacity:0; height:4px;
+      border-radius:50px; cursor:pointer;
+      background:linear-gradient(to right, #fff var(--vol), rgba(255,255,255,.25) var(--vol));
+      transition:width .28s cubic-bezier(.34,1.56,.64,1), opacity .22s ease;
+    }
+    .about-volume:hover .about-volume-slider,
+    .about-volume:focus-within .about-volume-slider { width:68px; opacity:1; }
+    .about-volume-slider::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none;
+      width:11px; height:11px; border-radius:50%;
+      background:#fff; border:none; cursor:pointer;
+      box-shadow:0 1px 4px rgba(0,0,0,.45);
+    }
+    .about-volume-slider::-moz-range-thumb {
+      width:11px; height:11px; border-radius:50%;
+      background:#fff; border:none; cursor:pointer;
+      box-shadow:0 1px 4px rgba(0,0,0,.45);
+    }
+
+    /* ── tela cheia ──────────────────────────────────────────────── */
+    .about-video-wrap:fullscreen {
+      aspect-ratio:auto; width:100%; height:100%;
+      border-radius:0; border:none;
+    }
+    .about-video-wrap:fullscreen video { object-fit:contain; }
+
+    @media (max-width:560px) {
+      .about-video-controls { padding:2.25rem .6rem .6rem; }
+      .about-ctrl { width:30px; height:30px; }
+      .about-ctrl svg { width:14px; height:14px; }
+      /* no celular a própria barra de progresso já cobre "ir e voltar",
+         e o slider de volume não funciona bem no toque */
+      .about-skip { display:none; }
+      .about-volume-slider { display:none; }
+      .about-time { font-size:.66rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .about-video-controls,
+      .about-progress-track,
+      .about-progress-thumb,
+      .about-progress-tip,
+      .about-ctrl,
+      .about-ctrl svg,
+      .about-volume-slider { transition:none; }
+      .about-ctrl:hover { transform:none; }
     }
 
     /* pulse levinho, disparado via JS depois que o player termina de
@@ -1180,6 +1595,55 @@
       .about-video-frame.video-pulse::after { animation:none; }
     }
 
+    /* ── comparativo entre empresas (slide 7) ─────────────
+       Tabela feita com grid em vez de <table>: no celular as duas
+       colunas viram uma só, com o nome da empresa em cima e o
+       diferencial embaixo — coisa que <table> não faz sem gambiarra. */
+    .compare-section { background:var(--bg); padding:5rem 0; position:relative; overflow:hidden; }
+
+    .compare-table {
+      max-width:820px; margin:0 auto;
+      border:1.5px solid var(--border);
+      border-radius:20px; overflow:hidden;
+      background:var(--white);
+      box-shadow:0 16px 44px -28px var(--shadow-lift);
+    }
+    .compare-head, .compare-row {
+      display:grid; grid-template-columns:1fr 1.4fr;
+      gap:1rem; padding:1rem 1.5rem;
+      align-items:center;
+    }
+    .compare-head {
+      background:var(--navy); color:#fff;
+      font-size:.72rem; font-weight:700;
+      letter-spacing:.1em; text-transform:uppercase;
+    }
+    .compare-row { border-top:1px solid var(--border); transition:background-color .25s ease; }
+    .compare-row:hover { background:rgba(47,213,90,.05); }
+    .compare-name { font-weight:700; font-size:.9rem; color:var(--ink); }
+    .compare-diff { font-size:.85rem; line-height:1.55; color:var(--muted); }
+
+    /* a nossa linha ganha peso: fundo verde suave, barra na lateral e
+       o texto no tom cheio em vez do muted */
+    .compare-row.is-ours {
+      background:rgba(47,213,90,.09);
+      box-shadow:inset 3px 0 0 var(--green);
+    }
+    .compare-row.is-ours:hover { background:rgba(47,213,90,.13); }
+    .compare-row.is-ours .compare-name { color:var(--green); }
+    .compare-row.is-ours .compare-diff { color:var(--ink); font-weight:600; }
+
+    .compare-note {
+      max-width:680px; margin:1.75rem auto 0;
+      text-align:center; font-size:.9rem;
+      line-height:1.7; color:var(--muted);
+    }
+
+    @media (max-width:560px) {
+      .compare-head { display:none; }  /* sem 2 colunas, o cabeçalho perde sentido */
+      .compare-row { grid-template-columns:1fr; gap:.3rem; padding:1rem 1.25rem; }
+    }
+
     /* ── testimonials ────────────────────────────────── */
     .testimonials-section { background:var(--white); padding:5rem 0; }
     .testimonials-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); margin-top:2.5rem; }
@@ -1208,7 +1672,8 @@
     .plan-card.highlight {
       background:var(--navy);
       border-color:var(--green);
-      box-shadow:0 16px 48px rgba(15,18,114,.25);
+      box-shadow:0 16px 48px var(--shadow-lift),
+                 0 0 0 1px rgba(47,213,90,.18);
     }
     /* glow verde que segue o mouse, atrás do conteúdo do card (mesma
        lógica do .feature-card / .trilha-card) */
@@ -1258,6 +1723,14 @@
     .plan-card.highlight .plan-desc { color:rgba(255,255,255,.7); }
     .plan-card:not(.highlight) .plan-desc { color:var(--muted); }
 
+    /* "A partir de" estava DENTRO do .plan-price (2.2rem): fazia o valor
+       quebrar em duas linhas e jogava o "/mês" pro canto. Virou um
+       rótulo pequeno acima, e o preço voltou a ser só o número. */
+    .plan-price-from {
+      font-size:.72rem; font-weight:600;
+      color:rgba(255,255,255,.55);
+      margin-bottom:.2rem;
+    }
     .plan-price-row { display:flex; align-items:flex-end; gap:4px; margin-bottom:1.5rem; }
     .plan-price { font-size:2.2rem; font-weight:800; line-height:1; }
     .plan-card.highlight .plan-price { color:#fff; }
@@ -1330,7 +1803,28 @@
       gap:2.5rem;
       position:relative; z-index:1;
     }
-    .cta-eyebrow { font-size:.72rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:.75rem; }
+    /* mesma pílula das outras seções, só que calibrada pro navy: o
+       vidro aqui é branco translúcido, não o --glass-bg (que é claro
+       no tema claro e sumiria sobre o fundo escuro do banner) */
+    .cta-eyebrow {
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.35rem .9rem .35rem .7rem;
+      border-radius:50px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter:blur(12px) saturate(150%);
+      -webkit-backdrop-filter:blur(12px) saturate(150%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.22);
+      font-size:.72rem; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--green);
+      margin-bottom:.85rem;
+    }
+    .cta-eyebrow::before {
+      content:""; flex-shrink:0;
+      width:6px; height:6px; border-radius:50%;
+      background:var(--green);
+      box-shadow:0 0 0 3px rgba(47,213,90,.25);
+    }
     .cta-title { font-size:clamp(1.8rem,4vw,3.2rem); font-weight:800; color:#fff; line-height:1.1; }
     .cta-title .accent { color:var(--green); }
     .cta-actions { display:flex; flex-direction:column; gap:.75rem; align-items:flex-start; }
@@ -1385,9 +1879,46 @@
     }
 
     /* smooth cross-fade on theme switch for surfaces without their own transition */
-    .nav, footer, .modal-box, .stat-cell,
-    .courses-section, .features-section, .testimonials-section, .pricing-section {
+    .nav, footer, .modal-box, .stat-cell, .compare-table, .compare-row,
+    .courses-section, .features-section, .testimonials-section,
+    .compare-section, .pricing-section {
       transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+    }
+
+    /* ── costura entre seções ──────────────────────────────
+       Antes uma seção encostava na outra e a troca de fundo era um
+       corte seco. Agora cada seção projeta uma sombra suave PRA CIMA,
+       sobre a anterior, e ganha um fio de luz na borda de cima — o
+       mesmo par sombra+brilho que dá volume aos cards. O resultado é
+       que as seções passam a se ler como painéis empilhados, com
+       profundidade, em vez de faixas coladas.
+
+       O ::before é o fio de luz; a sombra vai no box-shadow da própria
+       seção (spread negativo pra ela só "vazar" pra cima). */
+    .courses-section, .features-section, .about-section,
+    .compare-section, .pricing-section, .cta-section {
+      box-shadow:0 -20px 40px -28px var(--shadow-lift);
+    }
+    .courses-section::before, .features-section::before,
+    .about-section::before, .compare-section::before,
+    .pricing-section::before, .cta-section::before {
+      content:"";
+      position:absolute; top:0; left:0; right:0; height:1px;
+      background:linear-gradient(90deg,
+                 transparent, var(--glass-sheen) 20%,
+                 var(--glass-sheen) 80%, transparent);
+      pointer-events:none; z-index:2;
+    }
+
+    /* fio de progresso de leitura, criado pelo JS no fim do body */
+    .scroll-progress {
+      position:fixed; top:0; left:0;
+      width:100%; height:2px;
+      transform:scaleX(0); transform-origin:left center;
+      background:linear-gradient(90deg, var(--green), #7ef0a0);
+      box-shadow:0 0 12px rgba(47,213,90,.55);
+      z-index:42; pointer-events:none;
+      will-change:transform;
     }
 
     /* ── floating theme-toggle button (injected by themeSwitch.js) ──
@@ -1441,6 +1972,55 @@ html.theme-dark .hamburger {
 
     @media (prefers-reduced-motion: reduce) {
       [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* ── marca-texto fixo ──────────────────────────────
+       Mesma caneta verde do marca-texto da seleção (script no fim do
+       body), só que permanente e em trechos escolhidos a dedo pra
+       ressaltar a qualidade principal de cada seção.
+
+       O traço é um background-image que cresce de 0% a 100% da largura
+       — e não um ::before — então o texto fica naturalmente por cima,
+       sem z-index nem stacking context pra administrar, e o
+       box-decoration-break faz o traço quebrar junto com a linha.
+
+       Quem liga é o JS no fim do body: ele espera o surgimento
+       (data-reveal) do bloco terminar antes de "passar a caneta". */
+    mark.ink {
+      background-color:transparent;   /* mata o amarelo padrão do <mark> */
+      color:inherit;
+      background-image:linear-gradient(rgba(47,213,90,.42), rgba(47,213,90,.42));
+      background-repeat:no-repeat;
+      background-position:left center;
+      background-size:0% 100%;
+      border-radius:3px;
+      padding:.06em .16em;
+      margin:0 -.16em;                /* devolve o padding, pro texto não "abrir" */
+      box-decoration-break:clone;
+      -webkit-box-decoration-break:clone;
+      /* color entra na transição junto com o traço: no tema escuro o
+         texto clareia no mesmo ritmo em que a caneta passa */
+      transition:background-size .55s cubic-bezier(.16,1,.3,1), color .55s ease;
+    }
+    mark.ink.is-inked { background-size:100% 100%; }
+
+    /* no tema escuro o traço é mais leve E o texto marcado clareia pro
+       --ink (#eef0ff) — o mesmo branco dos itens da .about-list em
+       "sobre nós". Só vale depois de pintado (.is-inked), senão o texto
+       ficaria branco antes da caneta chegar. */
+    html.theme-dark mark.ink {
+      background-image:linear-gradient(rgba(47,213,90,.28), rgba(47,213,90,.28));
+    }
+    html.theme-dark mark.ink.is-inked { color:var(--ink); }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto mark.ink {
+        background-image:linear-gradient(rgba(47,213,90,.28), rgba(47,213,90,.28));
+      }
+      html.theme-auto mark.ink.is-inked { color:var(--ink); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      mark.ink { transition:none; }
     }
   </style>
 </head>
@@ -1515,18 +2095,21 @@ html.theme-dark .hamburger {
       <div><p class="link-title">Sobre nós</p><p class="link-sub">Conheça o Lidera360</p></div>
       <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
+    <a href="#comparativo">
+      <div><p class="link-title">Comparativo</p><p class="link-sub">Como nos diferenciamos</p></div>
+      <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
     <a href="#planos">
       <div><p class="link-title">Planos</p><p class="link-sub">Valores por porte de empresa</p></div>
       <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </nav>
 
-  <div class="menu-footer">
-    <!-- idem nav-actions: sem Entrar / Começar Grátis nesta versão.
-         A nota "sem cartão de crédito" saiu junto, porque só fazia
-         sentido acompanhando o CTA do teste grátis. -->
-    <p class="menu-note">Você está conectado</p>
-  </div>
+  <!-- SIMULAÇÃO DE USUÁRIO LOGADO: o .menu-footer inteiro saiu. Ele era
+       só os dois CTAs ("Entrar na plataforma" / "Agendar demonstração")
+       mais a nota "Demonstração gratuita", que é a legenda do segundo.
+       Sem os botões sobraria uma faixa vazia com borda e 3rem de padding
+       no pé do menu, falando de demonstração pra quem já está dentro. -->
 </div>
 
 <!-- ── Login modal ────────────────────────────────── -->
@@ -1613,12 +2196,14 @@ html.theme-dark .hamburger {
       <a href="#trilhas">Trilhas</a>
       <a href="#plataforma">Plataforma</a>
       <a href="#sobre">Sobre nós</a>
+      <a href="#comparativo">Comparativo</a>
       <a href="#planos">Planos</a>
     </nav>
 
+    <!-- SIMULAÇÃO DE USUÁRIO LOGADO: "Entrar" e "Agendar demo" saíram
+         daqui — quem já está dentro não precisa de nenhum dos dois.
+         Sobra só o hambúrguer. -->
     <div class="nav-actions">
-      <!-- versão "logada" da home (o login do index.html cai aqui):
-           sem os botões de Entrar / Começar Grátis -->
       <button class="hamburger" id="hamburger" aria-label="Menu">
         <span class="bar1"></span>
         <span class="bar2"></span>
@@ -1631,9 +2216,12 @@ html.theme-dark .hamburger {
 <!-- ── Hero ───────────────────────────────────────── -->
 <section class="hero" id="home">
   <!-- bg decoration -->
-  <div class="circle" style="width:500px;height:500px;background:rgba(15,18,114,.04);top:-100px;right:-150px;"></div>
+  <div class="circle" style="width:500px;height:500px;background:var(--circle-navy);top:-100px;right:-150px;"></div>
   <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.08);bottom:-50px;left:-80px;"></div>
-  <div class="circle" style="width:16px;height:16px;background:#0f1272;top:120px;left:12%;"></div>
+  <!-- este ponto estava em top:120px/left:12%, ou seja, DENTRO da coluna
+       de conteúdo e logo acima do .hero-badge — lia como elemento solto,
+       não como decoração. Foi pra calha esquerda, ao lado do título. -->
+  <div class="circle" style="width:16px;height:16px;background:var(--circle-navy-dot);top:300px;left:3.5%;"></div>
   <div class="circle" style="width:10px;height:10px;background:#f97316;top:200px;right:18%;"></div>
   <div class="circle" style="width:22px;height:22px;background:#2fd55a;bottom:80px;right:8%;"></div>
 
@@ -1643,10 +2231,10 @@ html.theme-dark .hamburger {
       <div>
         <div class="hero-badge" data-reveal data-reveal-group="hero-left"><span class="badge-dot"></span>Plataforma de T&D Corporativo</div>
         <h1 class="hero-title" data-reveal data-reveal-group="hero-left">Treine equipes.<br>Forme <span class="accent">líderes.</span></h1>
-        <p class="hero-body" data-reveal data-reveal-group="hero-left">Mais de 400 cursos em áreas estratégicas, trilhas personalizadas por cargo e relatórios completos para gestores.</p>
+        <p class="hero-body" data-reveal data-reveal-group="hero-left">Mais de 20 módulos em áreas estratégicas, <mark class="ink">trilhas personalizadas por cargo</mark> e relatórios completos para gestores.</p>
         <div class="hero-ctas" data-reveal data-reveal-group="hero-left">
           <button class="btn-green" onclick="window.location='#'">
-            Testar 14 dias grátis
+            Agendar demonstração
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
           <a href="#sobre" class="demo-btn">
@@ -1662,13 +2250,18 @@ html.theme-dark .hamburger {
         <div class="hero-img-wrap">
           <img class="hero-img" src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=520&fit=crop&auto=format" alt="Equipe em treinamento" loading="lazy"/>
         </div>
+        <!-- as pílulas traziam "94% taxa de conclusão média" e "+18 novos
+             cursos este mês" — métricas de uso que não constam em nenhum
+             documento e que o projeto (em prototipação) não teria como
+             ter. Trocadas pelo modelo comercial e pelo diferencial de IA,
+             ambos documentados. -->
         <div class="hero-pill hero-pill-1">
-          <p class="pill-val">94%</p>
-          <p class="pill-lbl">taxa de conclusão média</p>
+          <p class="pill-val">1</p>
+          <p class="pill-lbl">assinatura por empresa</p>
         </div>
         <div class="hero-pill hero-pill-2">
-          <p class="pill-lbl2">Novos cursos este mês</p>
-          <p class="pill-val2">+18</p>
+          <p class="pill-lbl2">Trilhas personalizadas por</p>
+          <p class="pill-val2">IA</p>
         </div>
       </div>
     </div>
@@ -1677,7 +2270,10 @@ html.theme-dark .hamburger {
     <div class="stats-bar" data-reveal>
       <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val" id="statTrilhasHero">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
       <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val" id="statModulosHero">0</p><p class="stat-lbl">Módulos práticos</p></div>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val">14 dias</p><p class="stat-lbl">Teste grátis, sem cartão</p></div>
+      <!-- "14 dias / teste grátis" não existe na documentação (ela prevê
+           demonstração gratuita e teste piloto). Trocado pelo dado de
+           mercado que fundamenta o projeto na apresentação e no ABNT. -->
+      <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val">89%</p><p class="stat-lbl">das empresas investem em T&amp;D</p></div>
       <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
     </div>
   </div>
@@ -1699,7 +2295,7 @@ html.theme-dark .hamburger {
       <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val" id="statTrilhas">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
       <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val" id="statModulos">0</p><p class="stat-lbl">Módulos no total</p></div>
       <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val">Seu ritmo</p><p class="stat-lbl">Avance quando quiser</p></div>
+      <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val">Seu ritmo</p><p class="stat-lbl"><mark class="ink">Avance quando quiser</mark></p></div>
     </div>
 
     <div class="trilha-grid" id="trilhaGrid"></div>
@@ -1708,7 +2304,7 @@ html.theme-dark .hamburger {
 
 <!-- ── Features ───────────────────────────────────── -->
 <section class="features-section" id="plataforma">
-  <div class="circle" style="width:250px;height:250px;background:rgba(15,18,114,.04);bottom:-60px;left:-60px;"></div>
+  <div class="circle" style="width:250px;height:250px;background:var(--circle-navy);bottom:-60px;left:-60px;"></div>
   <div class="circle" style="width:14px;height:14px;background:#f97316;top:60px;right:15%;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
     <div class="section-center" data-reveal>
@@ -1716,12 +2312,16 @@ html.theme-dark .hamburger {
       <h2 class="section-title">Tudo que o RH precisa <span class="accent">em um só lugar</span></h2>
     </div>
     <div class="features-grid">
-      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><p class="feature-title">Trilhas Personalizadas</p><p class="feature-body">Monte jornadas de aprendizagem por cargo, departamento ou meta estratégica — sem customização técnica.</p></div>
-      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><p class="feature-title">Dashboard em Tempo Real</p><p class="feature-body">Acompanhe progresso e engajamento por equipe. Relatórios exportáveis para o RH e gestores.</p></div>
-      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><p class="feature-title">Multiusuário por Empresa</p><p class="feature-body">Cada colaborador tem perfil, histórico e certificado próprios. Gestores têm visão consolidada do time.</p></div>
-      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div><p class="feature-title">Certificação Automática</p><p class="feature-body">Certificados digitais gerados ao concluir trilhas. Válidos para comprovação interna e externa.</p></div>
-      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><p class="feature-title">Mobile-First</p><p class="feature-body">Funciona em qualquer dispositivo. O colaborador aprende no ritmo dele — celular, tablet ou desktop.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><p class="feature-title">Trilhas Personalizadas</p><p class="feature-body">Monte jornadas de aprendizagem por cargo, departamento ou meta estratégica — <mark class="ink">sem customização técnica</mark>.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><p class="feature-title">Dashboard em Tempo Real</p><p class="feature-body">Acompanhe progresso e engajamento por equipe. Ranking, gamificação e relatórios exportáveis para o RH.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><p class="feature-title">Multiusuário por Empresa</p><p class="feature-body">Cada colaborador tem perfil, histórico e certificado próprios. Gestores têm <mark class="ink">visão consolidada do time</mark>.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></div><p class="feature-title">Certificação Automática</p><p class="feature-body">Avaliação ao fim de cada módulo e certificado digital emitido automaticamente na conclusão.</p></div>
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><p class="feature-title">Mobile-First</p><p class="feature-body"><mark class="ink">Funciona em qualquer dispositivo</mark>. O colaborador aprende no ritmo dele — celular, tablet ou desktop.</p></div>
       <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><p class="feature-title">Conformidade Garantida</p><p class="feature-body">Trilhas de compliance com rastreabilidade total. Histórico de aceites acessível por auditoria.</p></div>
+      <!-- IA: o diferencial central do projeto segundo a documentação
+           ("o Lidera360 se diferencia ao usar IA e indicadores para
+           identificar, desenvolver e preparar futuros líderes") -->
+      <div class="feature-card" data-reveal data-reveal-group="features"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 13.9 7.6 18.5 9.5 13.9 11.4 12 16 10.1 11.4 5.5 9.5 10.1 7.6Z"/><path d="M19 14 19.8 16.2 22 17 19.8 17.8 19 20 18.2 17.8 16 17 18.2 16.2Z"/></svg></div><p class="feature-title">IA que Revela Líderes</p><p class="feature-body">Personaliza trilhas, recomenda módulos e identifica potenciais líderes a partir dos indicadores de cada colaborador.</p></div>
     </div>
   </div>
 </section>
@@ -1736,15 +2336,17 @@ html.theme-dark .hamburger {
         <p class="section-eyebrow">Sobre nós</p>
         <h2 class="section-title" style="margin-bottom:1.25rem;">Quem somos e o que <span class="accent">propomos</span></h2>
         <p class="about-body">
-          O Lidera360 nasceu da constatação de que a maioria das plataformas de treinamento corporativo
-          fala apenas com líderes e gestores — deixando o restante da equipe sem oportunidades reais de
-          desenvolvimento. Nossa proposta é diferente: acreditamos que uma empresa forte se constrói
-          capacitando todos os seus colaboradores, do operacional à liderança.
+          No Brasil, <mark class="ink">89% das organizações investem em treinamento e desenvolvimento</mark> —
+          e ainda assim muitas seguem com baixa produtividade e dificuldade para formar novos líderes.
+          O motivo é que a maioria das plataformas fala apenas com líderes e gestores, deixando o restante
+          da equipe sem oportunidades reais de desenvolvimento. Nossa proposta é diferente: acreditamos que
+          uma empresa forte se constrói capacitando
+          <mark class="ink">todos os seus colaboradores, do operacional à liderança</mark>.
         </p>
         <p class="about-body">
           Por isso, criamos uma plataforma que une trilhas personalizadas, acompanhamento contínuo e
-          conteúdos práticos, ajudando cada funcionário a crescer no seu próprio ritmo e, ao mesmo tempo,
-          gerando dados claros para o RH acompanhar essa evolução.
+          conteúdos práticos, ajudando cada funcionário a crescer <mark class="ink">no seu próprio ritmo</mark> e, ao mesmo tempo,
+          gerando <mark class="ink">dados claros para o RH</mark> acompanhar essa evolução.
         </p>
         <ul class="about-list" data-reveal="fade">
           <li style="--i:0">
@@ -1754,7 +2356,7 @@ html.theme-dark .hamburger {
                 <path class="check-path" d="M4.3 8.2l2.5 2.5 4.9-5.2"/>
               </svg>
             </span>
-            <span>Desenvolvimento acessível a todos os níveis da empresa, não só à liderança</span>
+            <span>Desenvolvimento acessível a todos os níveis da empresa, <mark class="ink">não só à liderança</mark></span>
           </li>
           <li style="--i:1">
             <span class="check-badge" aria-hidden="true">
@@ -1763,7 +2365,7 @@ html.theme-dark .hamburger {
                 <path class="check-path" d="M4.3 8.2l2.5 2.5 4.9-5.2"/>
               </svg>
             </span>
-            <span>Trilhas pensadas para formar novos líderes de dentro da própria equipe</span>
+            <span>Trilhas pensadas para formar novos líderes <mark class="ink">de dentro da própria equipe</mark></span>
           </li>
           <li style="--i:2">
             <span class="check-badge" aria-hidden="true">
@@ -1772,9 +2374,11 @@ html.theme-dark .hamburger {
                 <path class="check-path" d="M4.3 8.2l2.5 2.5 4.9-5.2"/>
               </svg>
             </span>
-            <span>Relatórios e acompanhamento contínuo para gestores tomarem melhores decisões</span>
+            <span>Relatórios e <mark class="ink">acompanhamento contínuo</mark> para gestores tomarem melhores decisões</span>
           </li>
         </ul>
+        <!-- assinatura oficial do projeto (capa ABNT, slide 4 e Plano de Negócio) -->
+        <p class="about-slogan" data-reveal="fade">Aprenda, evolua e lidere.</p>
         <a href="#" class="btn-green">Conheça nossa proposta</a>
       </div>
       <!-- right: vídeo -->
@@ -1783,31 +2387,148 @@ html.theme-dark .hamburger {
         <div class="aura-blob aura-blob-1" data-depth="1"></div>
         <div class="aura-blob aura-blob-2" data-depth="-0.8"></div>
         <div class="aura-blob aura-blob-3" data-depth="1.4"></div>
-        <div class="about-video-wrap">
-          <iframe
-            src="https://www.youtube.com/embed/PtyDLvDLX1k"
-            title="Vídeo institucional Lidera360"
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen>
-          </iframe>
+        <div class="about-video-wrap" id="aboutVideoWrap">
+          <!-- muted é obrigatório pro autoplay: navegador nenhum deixa um
+               vídeo com som começar sozinho. Sem `autoplay` no atributo —
+               quem dá o play é o JS, quando o bloco entra na tela. -->
+          <video id="aboutVideo" preload="metadata" muted playsinline webkit-playsinline title="Vídeo institucional Lidera360">
+            <source src="src/3meia0vid.MOV">
+            Seu navegador não suporta a reprodução de vídeo em HTML5.
+          </video>
+          <div class="about-video-scrim" aria-hidden="true"></div>
+          <button class="module-video-toggle about-video-toggle" id="aboutVideoToggle" aria-label="Reproduzir vídeo">
+            <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          </button>
+
+          <!-- controles: progresso (arrastável), tempo, ±10s, volume e tela cheia -->
+          <div class="about-video-controls">
+            <div class="about-progress" id="aboutProgress" role="slider" tabindex="0"
+                 aria-label="Progresso do vídeo" aria-valuemin="0" aria-valuemax="100"
+                 aria-valuenow="0" aria-valuetext="0:00">
+              <div class="about-progress-track">
+                <div class="about-progress-buffered" id="aboutProgressBuffered"></div>
+                <div class="about-progress-fill" id="aboutProgressFill"></div>
+              </div>
+              <span class="about-progress-thumb" id="aboutProgressThumb"></span>
+              <span class="about-progress-tip" id="aboutProgressTip">0:00</span>
+            </div>
+
+            <div class="about-controls-row">
+              <button class="about-ctrl" id="aboutBarToggle" aria-label="Reproduzir vídeo">
+                <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+              </button>
+
+              <!-- arco de 280° aberto no topo + ponta de seta cheia na
+                   ponta do vão: à esquerda pra voltar, à direita pra
+                   avançar. O número vai no miolo. -->
+              <button class="about-ctrl about-skip" id="aboutSkipBack" aria-label="Voltar 10 segundos">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M17.36 7.5A7 7 0 1 1 6.64 7.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                  <path d="M7.4 5.2 4.4 7.5l3 2.3z" fill="currentColor"/>
+                  <text x="12" y="15" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">10</text>
+                </svg>
+              </button>
+              <button class="about-ctrl about-skip" id="aboutSkipFwd" aria-label="Avançar 10 segundos">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6.64 7.5A7 7 0 1 0 17.36 7.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                  <path d="M16.6 5.2 19.6 7.5l-3 2.3z" fill="currentColor"/>
+                  <text x="12" y="15" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">10</text>
+                </svg>
+              </button>
+
+              <p class="about-time">
+                <span id="aboutTimeNow">0:00</span>
+                <span class="time-sep">/</span>
+                <span class="time-total" id="aboutTimeTotal">0:00</span>
+              </p>
+
+              <span class="about-controls-spacer"></span>
+
+              <div class="about-volume">
+                <button class="about-ctrl" id="aboutVolBtn" aria-label="Silenciar">
+                  <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M11 5 6 9H2v6h4l5 4V5z"/>
+                    <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+                    <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+                  </svg>
+                  <svg class="icon-vol-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M11 5 6 9H2v6h4l5 4V5z"/>
+                    <line x1="22" y1="9" x2="16" y2="15"/>
+                    <line x1="16" y1="9" x2="22" y2="15"/>
+                  </svg>
+                </button>
+                <input class="about-volume-slider" id="aboutVolSlider" type="range"
+                       min="0" max="1" step="0.01" value="1" aria-label="Volume" />
+              </div>
+
+              <button class="about-ctrl" id="aboutFsBtn" aria-label="Tela cheia">
+                <svg class="icon-fs-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
+                </svg>
+                <svg class="icon-fs-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M8 3v3a2 2 0 0 1-2 2H3M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3M16 21v-3a2 2 0 0 1 2-2h3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
+<!-- ── Comparativo entre empresas ───────────────────
+     Reproduz o slide 7 da apresentação. Fica ANTES dos planos porque
+     é o que justifica o preço: o visitante vê o diferencial e só
+     depois o valor. ──────────────────────────────────────────────── -->
+<section class="compare-section" id="comparativo">
+  <div class="circle" style="width:300px;height:300px;background:rgba(47,213,90,.05);top:-90px;left:-70px;"></div>
+  <div class="circle" style="width:14px;height:14px;background:#f97316;bottom:80px;right:14%;"></div>
+  <div class="wrap" style="position:relative;z-index:1;">
+    <div class="section-center" data-reveal>
+      <p class="section-eyebrow">Comparativo</p>
+      <h2 class="section-title">Onde o Lidera360<br><span class="accent">se diferencia</span></h2>
+    </div>
+
+    <div class="compare-table" data-reveal>
+      <div class="compare-head">
+        <span>Empresa</span>
+        <span>Diferencial</span>
+      </div>
+      <div class="compare-row" data-reveal="fade" data-reveal-group="compare">
+        <span class="compare-name">CrossKnowledge</span>
+        <span class="compare-diff">Gamificação e personalização</span>
+      </div>
+      <div class="compare-row" data-reveal="fade" data-reveal-group="compare">
+        <span class="compare-name">FranklinCovey</span>
+        <span class="compare-diff">Foco no desenvolvimento de líderes</span>
+      </div>
+      <div class="compare-row is-ours" data-reveal="fade" data-reveal-group="compare">
+        <span class="compare-name">Lidera360</span>
+        <span class="compare-diff">Identificação e desenvolvimento de futuros líderes</span>
+      </div>
+    </div>
+
+    <p class="compare-note" data-reveal="fade">
+      O Lidera360 se diferencia ao usar <mark class="ink">IA e indicadores para identificar,
+      desenvolver e preparar futuros líderes</mark>, unindo aprendizagem e gestão de talentos.
+    </p>
+  </div>
+</section>
+
 <!-- ── Planos e valores ─────────────────────────────── -->
 <section class="pricing-section" id="planos">
-  <div class="circle" style="width:260px;height:260px;background:rgba(15,18,114,.04);top:-70px;left:-70px;"></div>
+  <div class="circle" style="width:260px;height:260px;background:var(--circle-navy);top:-70px;left:-70px;"></div>
   <div class="circle" style="width:16px;height:16px;background:#2fd55a;bottom:70px;right:12%;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
     <div class="section-center" data-reveal>
       <p class="section-eyebrow">Planos</p>
       <h2 class="section-title">Um plano por empresa,<br><span class="accent">sem custo por colaborador</span></h2>
       <p style="max-width:560px;margin:1rem auto 0;font-size:.9rem;line-height:1.7;color:var(--muted);">
-        A contratação é única, feita pela empresa — o valor muda de acordo com o número de
-        funcionários, e todos os colaboradores cadastrados têm acesso completo à plataforma.
+        <mark class="ink">Uma única assinatura por empresa</mark> — o valor muda de acordo com o número de
+        funcionários, e todos os colaboradores cadastrados têm <mark class="ink">acesso completo à plataforma</mark>.
       </p>
     </div>
 
@@ -1879,7 +2600,8 @@ html.theme-dark .hamburger {
         <span class="plan-badge">Personalizado</span>
         <p class="plan-name">Enterprise</p>
         <p class="plan-desc">1.000 funcionários ou mais</p>
-        <div class="plan-price-row"><span class="plan-price">A partir de R$ 3.500,00</span><span class="plan-per">/mês</span></div>
+        <p class="plan-price-from">A partir de</p>
+        <div class="plan-price-row"><span class="plan-price">R$ 3.500,00</span><span class="plan-per">/mês</span></div>
         <ul class="plan-features">
           <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Todas as trilhas do Lidera360</li>
           <li><svg class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="#2fd55a" opacity=".15"/><path d="M4 8l2.5 2.5L12 5" stroke="#2fd55a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Painel do gestor e relatórios</li>
@@ -1908,8 +2630,8 @@ html.theme-dark .hamburger {
         <h2 class="cta-title">Sua equipe merece o melhor.<br><span class="accent">Comece hoje.</span></h2>
       </div>
       <div class="cta-actions">
-        <button class="btn-green">Testar 14 dias grátis</button>
-        <p class="cta-note">Sem cartão de crédito · Cancele quando quiser</p>
+        <button class="btn-green">Agendar demonstração</button>
+        <p class="cta-note">Demonstração gratuita · Teste piloto para sua empresa</p>
       </div>
     </div>
   </div>
@@ -1929,7 +2651,7 @@ html.theme-dark .hamburger {
           </svg>
           Lidera<span>360</span>
         </span>
-        <p class="footer-tagline">Desenvolvimento que te leva mais longe.</p>
+        <p class="footer-tagline">Aprenda, evolua e lidere.<br>Desenvolvimento que te leva mais longe.</p>
       </div>
       <div>
         <p class="footer-col-title">Produto</p>
@@ -2297,8 +3019,8 @@ html.theme-dark .hamburger {
   hamburger.addEventListener('click', () => menuPanel.classList.contains('open') ? closeMenu() : openMenu())
   menuBackdrop.addEventListener('click', closeMenu)
   menuClose.addEventListener('click', closeMenu)
-  // nesta versão (logada) o botão de entrar não existe no menu — o "?"
-  // evita que a linha quebre o resto do script
+  // o botão não existe mais (simulação de logado); sem o if, o
+  // TypeError derrubaria todo o resto deste bloco de script
   if (menuLoginBtn) menuLoginBtn.addEventListener('click', () => { closeMenu(); openLogin() })
 
   /* ── clique nos links do menu mobile (#home, #trilhas etc.) ──────
@@ -2354,7 +3076,7 @@ html.theme-dark .hamburger {
     }, 260)
   }
 
-  // idem: sem o botão "Entrar" no nav desta versão
+  // idem: o "Entrar" do nav saiu na simulação de usuário logado
   const navLoginBtn = document.getElementById('navLoginBtn')
   if (navLoginBtn) navLoginBtn.addEventListener('click', openLogin)
   document.getElementById('loginClose').addEventListener('click', closeLogin)
@@ -2372,9 +3094,14 @@ html.theme-dark .hamburger {
     loginBox.style.setProperty('--my', `${e.clientY - r.top}px`)
   })
 
-  /* ── botão de login: spinner -> check -> fecha. Não há backend, o
-     atraso é só pro clique ter retorno visual em vez de o modal
-     sumir seco. ─────────────────────────────────────── */
+  /* ── botão de login: spinner -> check -> redireciona ───────────────
+     Não há back-end. Pra apresentação, o "login" leva pro
+     lidera360.html, que é uma cópia desta página SEM os botões de
+     entrar / começar grátis — ou seja, a mesma home no estado
+     "logado". O atraso do spinner é só pro clique ter retorno visual
+     em vez de a página trocar seca. ─────────────────────────────── */
+  const PAGINA_LOGADA = 'lidera360.html'
+
   ;(function () {
     const btn = document.getElementById('loginSubmit')
     if (!btn) return
@@ -2387,15 +3114,16 @@ html.theme-dark .hamburger {
       setTimeout(() => {
         btn.classList.remove('is-loading')
         btn.classList.add('is-done')
-        setTimeout(() => {
-          closeLogin()
-          // volta ao estado inicial já com o modal fechado, pra próxima
-          // abertura não mostrar o check de um login antigo
-          setTimeout(() => btn.classList.remove('is-done'), 300)
-        }, 550)
+        setTimeout(() => { window.location.href = PAGINA_LOGADA }, 550)
       }, 800)
     })
   })()
+
+  /* os botões de Google/LinkedIn fazem parte do mesmo painel, então
+     levam pro mesmo lugar — direto, sem o spinner */
+  document.querySelectorAll('.social-btn').forEach(btn => {
+    btn.addEventListener('click', () => { window.location.href = PAGINA_LOGADA })
+  })
 
   /* ── eye toggle ───────────────────────────────────── */
   let passVisible = false
@@ -2420,6 +3148,415 @@ html.theme-dark .hamburger {
 
   /* ── init ─────────────────────────────────────────── */
   renderTrilhas()
+
+  /* ── play/pause do vídeo institucional (sobre nós) — mesmo botão e
+     mesma lógica de toggle usados no placeholder de vídeo dos módulos
+     no dash.html, agora controlando o <video> de verdade. ── */
+  ;(function () {
+    const wrap = document.getElementById('aboutVideoWrap')
+    const video = document.getElementById('aboutVideo')
+    const toggle = document.getElementById('aboutVideoToggle')
+    if (!wrap || !video || !toggle) return
+
+    const barToggle = document.getElementById('aboutBarToggle')
+    const progress  = document.getElementById('aboutProgress')
+    const fill      = document.getElementById('aboutProgressFill')
+    const buffered  = document.getElementById('aboutProgressBuffered')
+    const thumb     = document.getElementById('aboutProgressThumb')
+    const tip       = document.getElementById('aboutProgressTip')
+    const timeNow   = document.getElementById('aboutTimeNow')
+    const timeTotal = document.getElementById('aboutTimeTotal')
+    const volBtn    = document.getElementById('aboutVolBtn')
+    const volSlider = document.getElementById('aboutVolSlider')
+    const fsBtn     = document.getElementById('aboutFsBtn')
+
+    /* m:ss, ou h:mm:ss quando o vídeo passa de uma hora */
+    function fmt(s) {
+      if (!isFinite(s) || s < 0) s = 0
+      s = Math.floor(s)
+      const h = Math.floor(s / 3600)
+      const m = Math.floor((s % 3600) / 60)
+      const sec = String(s % 60).padStart(2, '0')
+      return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`
+    }
+
+    /* ── auto-hide dos controles ──────────────────────────────────
+       Só vale durante a reprodução: com o vídeo pausado o CSS já
+       mantém a barra visível. Qualquer interação re-arma o timer. */
+    let hideTimer = null, scrubbing = false, overBar = false
+    function showControls() {
+      wrap.classList.add('controls-visible')
+      clearTimeout(hideTimer)
+      if (!video.paused && !scrubbing && !overBar) {
+        hideTimer = setTimeout(() => wrap.classList.remove('controls-visible'), 2600)
+      }
+    }
+
+    /* ── play/pause (os dois botões andam juntos) ─────────────────── */
+    function setPlaying(playing) {
+      wrap.classList.toggle('is-playing', playing)
+      toggle.classList.toggle('is-playing', playing)
+      barToggle.classList.toggle('is-playing', playing)
+      const label = playing ? 'Pausar vídeo' : 'Reproduzir vídeo'
+      toggle.setAttribute('aria-label', label)
+      barToggle.setAttribute('aria-label', label)
+      showControls()
+    }
+
+    // marcado no primeiro play/pause manual: a partir daí o autoplay por
+    // scroll não manda mais no vídeo (ver bloco de autoplay no fim)
+    let userTookOver = false
+
+    function togglePlay() {
+      userTookOver = true
+      if (video.paused || video.ended) video.play(); else video.pause()
+    }
+
+    toggle.addEventListener('click', togglePlay)
+    barToggle.addEventListener('click', togglePlay)
+    video.addEventListener('click', togglePlay)
+    video.addEventListener('play',  () => setPlaying(true))
+    video.addEventListener('pause', () => setPlaying(false))
+    video.addEventListener('ended', () => setPlaying(false))
+
+    /* ── progresso + tempo ────────────────────────────────────────── */
+    function renderProgress() {
+      const d = video.duration
+      const pct = (isFinite(d) && d > 0) ? (video.currentTime / d) * 100 : 0
+      fill.style.width = pct + '%'
+      thumb.style.left = pct + '%'
+      timeNow.textContent = fmt(video.currentTime)
+      progress.setAttribute('aria-valuenow', Math.round(pct))
+      progress.setAttribute('aria-valuetext', fmt(video.currentTime))
+    }
+
+    /* trecho já baixado, desenhado atrás do preenchimento verde */
+    function renderBuffered() {
+      const d = video.duration
+      if (!isFinite(d) || d <= 0 || !video.buffered.length) return
+      let end = 0
+      for (let i = 0; i < video.buffered.length; i++) {
+        if (video.buffered.start(i) <= video.currentTime) {
+          end = Math.max(end, video.buffered.end(i))
+        }
+      }
+      buffered.style.width = (end / d) * 100 + '%'
+    }
+
+    function onMeta() {
+      timeTotal.textContent = fmt(video.duration)
+      renderProgress()
+      renderBuffered()
+    }
+    video.addEventListener('timeupdate', renderProgress)
+    video.addEventListener('progress', renderBuffered)
+    video.addEventListener('loadedmetadata', onMeta)
+    video.addEventListener('durationchange', onMeta)
+    // com preload="metadata" os metadados costumam chegar ANTES deste
+    // script rodar (ele está no fim do body) — aí o loadedmetadata já
+    // passou e o listener nunca dispararia
+    if (video.readyState >= 1) onMeta()
+
+    /* ── arrastar a barra pra ir/voltar ───────────────────────────
+       pointer events cobrem mouse e toque no mesmo caminho; o
+       setPointerCapture mantém o arraste vivo mesmo se o cursor sair
+       da barra no meio do movimento. */
+    function ratioFromEvent(e) {
+      const r = progress.getBoundingClientRect()
+      return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width))
+    }
+    function seekTo(ratio) {
+      if (!isFinite(video.duration)) return
+      video.currentTime = ratio * video.duration
+      renderProgress()
+    }
+
+    progress.addEventListener('pointerdown', e => {
+      scrubbing = true
+      progress.classList.add('is-scrubbing')
+      try { progress.setPointerCapture(e.pointerId) } catch (_) {}
+      seekTo(ratioFromEvent(e))
+      showControls()
+    })
+    progress.addEventListener('pointermove', e => {
+      const ratio = ratioFromEvent(e)
+      // a etiqueta segue o cursor mesmo sem arrastar, pra dar preview
+      if (isFinite(video.duration)) {
+        tip.style.left = (ratio * 100) + '%'
+        tip.textContent = fmt(ratio * video.duration)
+      }
+      if (scrubbing) seekTo(ratio)
+    })
+    function endScrub(e) {
+      if (!scrubbing) return
+      scrubbing = false
+      progress.classList.remove('is-scrubbing')
+      try { progress.releasePointerCapture(e.pointerId) } catch (_) {}
+      showControls()
+    }
+    progress.addEventListener('pointerup', endScrub)
+    progress.addEventListener('pointercancel', endScrub)
+
+    /* ── pular 10s ────────────────────────────────────────────────── */
+    function skip(delta) {
+      if (!isFinite(video.duration)) return
+      video.currentTime = Math.min(video.duration, Math.max(0, video.currentTime + delta))
+      renderProgress()
+      showControls()
+    }
+    document.getElementById('aboutSkipBack').addEventListener('click', () => skip(-10))
+    document.getElementById('aboutSkipFwd').addEventListener('click',  () => skip(10))
+
+    /* ── volume ───────────────────────────────────────────────────── */
+    function renderVolume() {
+      const v = video.muted ? 0 : video.volume
+      volSlider.value = v
+      volSlider.style.setProperty('--vol', (v * 100) + '%')
+      volBtn.classList.toggle('is-muted', v === 0)
+      volBtn.setAttribute('aria-label', v === 0 ? 'Ativar som' : 'Silenciar')
+    }
+    volSlider.addEventListener('input', () => {
+      video.volume = parseFloat(volSlider.value)
+      video.muted = video.volume === 0
+      showControls()
+    })
+    volBtn.addEventListener('click', () => {
+      video.muted = !video.muted
+      // desmutar com o slider no zero não devolveria som nenhum
+      if (!video.muted && video.volume === 0) video.volume = 0.6
+      showControls()
+    })
+    video.addEventListener('volumechange', renderVolume)
+    renderVolume()
+
+    /* ── tela cheia ───────────────────────────────────────────────── */
+    fsBtn.addEventListener('click', () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen()
+      } else if (wrap.requestFullscreen) {
+        wrap.requestFullscreen()
+      } else if (video.webkitEnterFullscreen) {
+        video.webkitEnterFullscreen() // iOS só aceita tela cheia no <video>
+      }
+    })
+    document.addEventListener('fullscreenchange', () => {
+      const on = document.fullscreenElement === wrap
+      wrap.classList.toggle('is-fullscreen', on)
+      fsBtn.setAttribute('aria-label', on ? 'Sair da tela cheia' : 'Tela cheia')
+    })
+
+    /* ── mostrar/esconder conforme a interação ────────────────────── */
+    wrap.addEventListener('pointermove', showControls)
+    wrap.addEventListener('focusin', showControls)
+    wrap.addEventListener('mouseleave', () => {
+      if (video.paused || scrubbing) return
+      clearTimeout(hideTimer)
+      wrap.classList.remove('controls-visible')
+    })
+    const bar = wrap.querySelector('.about-video-controls')
+    bar.addEventListener('mouseenter', () => { overBar = true;  showControls() })
+    bar.addEventListener('mouseleave', () => { overBar = false; showControls() })
+
+    /* ── atalhos de teclado, quando o foco está dentro do player ──── */
+    progress.addEventListener('keydown', e => {
+      const delta = e.key === 'ArrowLeft' ? -5 : e.key === 'ArrowRight' ? 5 : 0
+      if (!delta) return
+      e.preventDefault()
+      e.stopPropagation() // o handler do wrap não precisa ver de novo
+      skip(delta)
+    })
+    wrap.addEventListener('keydown', e => {
+      // o slider de volume tem o próprio tratamento nativo das setas
+      if (e.target === volSlider) return
+      if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+        // com um botão focado, deixa o próprio botão responder ao espaço
+        if (e.target.closest && e.target.closest('button')) return
+        e.preventDefault(); togglePlay()
+      } else if (e.key === 'ArrowLeft')  { e.preventDefault(); skip(-5) }
+      else if (e.key === 'ArrowRight')   { e.preventDefault(); skip(5)  }
+      else if (e.key === 'm' || e.key === 'M') { volBtn.click() }
+      else if (e.key === 'f' || e.key === 'F') { fsBtn.click() }
+    })
+
+    /* ── autoplay mudo ao surgir ──────────────────────────────────
+       O vídeo começa sozinho, sem som, quando o bloco entra na tela —
+       e só DEPOIS que o surgimento (data-reveal) termina, na mesma
+       lógica de encadeamento das marcações de texto.
+
+       Três cuidados:
+       · `muted` no atributo do <video> é o que autoriza o autoplay;
+         com som, todo navegador bloqueia. O play() ainda pode ser
+         recusado (economia de dados, política do navegador), então o
+         .catch deixa o vídeo pausado com o botão central à mostra em
+         vez de estourar um erro no console.
+       · sai da tela, pausa; volta, retoma — não faz sentido gastar
+         banda tocando um vídeo que ninguém está vendo.
+       · assim que a pessoa mexe no play/pause, o automático se cala
+         de vez (userTookOver), pra não sobrescrever a decisão dela. */
+    ;(function () {
+      if (!('IntersectionObserver' in window)) return
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+      const REVEAL_MS = 800  // duração da transition de [data-reveal]
+      const BREATH    = 200
+      let armed = false      // já esperou o surgimento ao menos uma vez
+      let pausedByScroll = false
+
+      function tryPlay() {
+        if (userTookOver) return
+        video.muted = true   // reforça, caso algo tenha mexido no volume
+        const p = video.play()
+        if (p && p.catch) p.catch(() => { /* navegador recusou: fica pausado */ })
+      }
+
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (userTookOver) return
+
+          if (entry.isIntersecting) {
+            if (!armed) {
+              armed = true
+              setTimeout(() => { if (!userTookOver) tryPlay() }, REVEAL_MS + BREATH)
+            } else if (pausedByScroll) {
+              pausedByScroll = false
+              tryPlay()
+            }
+          } else if (!video.paused) {
+            pausedByScroll = true
+            video.pause()
+          }
+        })
+      }, { threshold: 0.35 })
+
+      io.observe(wrap)
+    })()
+  })()
+
+  /* ── bolinhas do fundo: variação + profundidade no scroll ─────────
+     A deriva em si é CSS (@keyframes circleDrift*). Aqui só fazemos
+     duas coisas:
+
+     1) espalhar as variantes e dar um atraso NEGATIVO a cada bolinha,
+        pra cada uma já entrar no meio do próprio ciclo — sem isso, as
+        20 bolinhas começariam todas na mesma pose e o fundo "pulsaria"
+        junto, entregando o truque;
+     2) parallax no scroll: quanto maior a bolinha, mais devagar ela
+        anda em relação à página (profundidade). Escreve `translate`,
+        que compõe com o `transform` da animação em vez de brigar. */
+  ;(function () {
+    const circles = Array.from(document.querySelectorAll('.circle'))
+    if (!circles.length) return
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    circles.forEach((c, i) => {
+      if (i % 3 === 1) c.classList.add('drift-b')
+      if (i % 3 === 2) c.classList.add('drift-c')
+      // atraso negativo = já começa adiantado no ciclo
+      c.style.animationDelay = `-${(i * 3.7) % 26}s`
+    })
+
+    if (prefersReducedMotion) return
+
+    // profundidade pela área: bolinha grande = fundo = anda menos
+    const layers = circles.map(c => {
+      const size = parseFloat(c.style.width) || 100
+      const section = c.parentElement
+      // 18px pras miúdas (primeiro plano), ~6px pras enormes (fundo)
+      const depth = Math.max(6, 26 - size / 24)
+      return { el: c, section, depth }
+    })
+
+    let raf = null
+    function update() {
+      raf = null
+      const vh = window.innerHeight
+      layers.forEach(({ el, section, depth }) => {
+        const r = section.getBoundingClientRect()
+        if (r.bottom < -200 || r.top > vh + 200) return // fora de vista: nem calcula
+        // progress: 0 quando a seção entra por baixo, 1 quando sai por cima
+        const progress = (vh - r.top) / (vh + r.height)
+        el.style.translate = `0 ${(progress - 0.5) * 2 * depth}px`
+      })
+    }
+    function onScroll() { if (!raf) raf = requestAnimationFrame(update) }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    update()
+  })()
+
+  /* ── contadores das estatísticas ─────────────────────────────────
+     Os números apareciam prontos. Agora sobem de 0 até o valor quando
+     a célula entra na tela. Só anima quando o conteúdo é um número
+     puro — "14 dias" e "Seu ritmo" continuam intactos. O valor alvo é
+     lido no momento da revelação, então já pegou o que o
+     renderTrilhas() escreveu. ─────────────────────────────────────── */
+  ;(function () {
+    const vals = Array.from(document.querySelectorAll('.stat-val'))
+    if (!vals.length || !('IntersectionObserver' in window)) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const DURATION = 1400
+
+    function countUp(el) {
+      const raw = el.textContent.trim()
+      // aceita número puro ("22") ou percentual ("89%"); "14 dias" e
+      // "Seu ritmo" continuam de fora
+      const m = raw.match(/^(\d+)(%?)$/)
+      if (!m) return
+      const target = parseInt(m[1], 10)
+      const sufixo = m[2]
+      if (!target) return
+
+      el.style.fontVariantNumeric = 'tabular-nums' // trava a largura dos dígitos
+      const start = performance.now()
+      function tick(now) {
+        const p = Math.min(1, (now - start) / DURATION)
+        // easeOutCubic: desacelera no fim sem "queimar" a subida.
+        // (com easeOutExpo o número chegava a 97% na metade do tempo —
+        //  a contagem virava um flash e não dava pra ler)
+        const eased = 1 - Math.pow(1 - p, 3)
+        el.textContent = Math.round(target * eased) + sufixo
+        if (p < 1) requestAnimationFrame(tick)
+        else el.textContent = target + sufixo
+      }
+      requestAnimationFrame(tick)
+    }
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return
+        io.unobserve(e.target)
+        countUp(e.target)
+      })
+    }, { threshold: 0.4 })
+
+    vals.forEach(v => io.observe(v))
+  })()
+
+  /* ── barra de progresso de leitura ───────────────────────────────
+     Fio verde no topo que acompanha o quanto da página já foi rolado.
+     z-index 42: acima da nav (40) e do botão de tema (41), abaixo do
+     menu lateral (45/46) e do modal de login (50). ───────────────── */
+  ;(function () {
+    const bar = document.createElement('div')
+    bar.className = 'scroll-progress'
+    document.body.appendChild(bar)
+
+    let raf = null
+    function update() {
+      raf = null
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      const p = max > 0 ? Math.min(1, window.scrollY / max) : 0
+      bar.style.transform = `scaleX(${p})`
+    }
+    function onScroll() { if (!raf) raf = requestAnimationFrame(update) }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    update()
+  })()
 
   /* ── aura do vídeo (sobre nós): flutua sozinha + acompanha o mouse ── */
   ;(function () {
@@ -2804,6 +3941,61 @@ html.theme-dark .hamburger {
     // de recalcular a cada scroll, simplesmente limpa
     window.addEventListener('scroll', clearMarks, true)
     window.addEventListener('resize', clearMarks)
+  })()
+
+  /* ── marca-texto FIXO: passa a caneta verde em trechos escolhidos ──
+     Mesma ideia do bloco acima, mas permanente: cada <mark class="ink">
+     tem um traço que cresce de 0 a 100% da largura (CSS lá no <style>).
+
+     A regra pedida é que o traço só entre DEPOIS que o bloco terminou
+     de surgir, pra não competir com o data-reveal. Por isso o disparo
+     não é no momento em que o elemento entra na viewport, e sim
+     duração-do-surgimento + o stagger que o próprio elemento carrega
+     (data-reveal-group escreve um transition-delay inline nele) + um
+     respiro. Usamos o mesmo threshold/rootMargin do observer do reveal
+     pra os dois começarem a contar do mesmo instante. ─────────────── */
+  ;(function () {
+    const marks = Array.from(document.querySelectorAll('mark.ink'))
+    if (!marks.length) return
+
+    const REVEAL_MS = 800 // igual à duração da transition de [data-reveal]
+    const BREATH    = 160 // respiro entre o fim do surgimento e a caneta
+    const STAGGER   = 150 // atraso entre marcações do mesmo bloco
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+      marks.forEach(m => m.classList.add('is-inked'))
+      return
+    }
+
+    // agrupa por bloco revelado, pra escalonar as marcações dentro dele
+    const groups = new Map()
+    marks.forEach(m => {
+      const host = m.closest('[data-reveal]')
+      if (!host) { m.classList.add('is-inked'); return } // fora de reveal: pinta direto
+      if (!groups.has(host)) groups.set(host, [])
+      groups.get(host).push(m)
+    })
+
+    groups.forEach(list => {
+      list.forEach((m, i) => { m.style.transitionDelay = (i * STAGGER) + 'ms' })
+    })
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return
+        io.unobserve(entry.target)
+        const list = groups.get(entry.target)
+        if (!list) return
+        const hostDelay = parseFloat(entry.target.style.transitionDelay) || 0
+        setTimeout(
+          () => list.forEach(m => m.classList.add('is-inked')),
+          REVEAL_MS + hostDelay + BREATH
+        )
+      })
+    }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' })
+
+    groups.forEach((list, host) => io.observe(host))
   })()
 
   /* ── planos: toggle deslizante dentro da mesma caixa ─────────────

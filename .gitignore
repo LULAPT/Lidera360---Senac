@@ -1,0 +1,20 @@
+# ── mídia bruta ────────────────────────────────────────────
+# Arquivos de câmera (o vídeo institucional saiu do iPhone em
+# .MOV com 267 MB). O GitHub REJEITA push de arquivo acima de
+# 100 MiB, então o material bruto fica fora do repositório —
+# só a versão convertida e comprimida em src/img/ é versionada.
+*.MOV
+*.mov
+*.mkv
+*.avi
+*.ProRes.mp4
+
+# arquivos temporários de encode do ffmpeg (two-pass)
+*ffmpeg2pass*
+*x264pass*
+*.log.mbtree
+
+# ── sistema ────────────────────────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
