@@ -191,7 +191,18 @@
     @media(max-width:768px){ .wrap{ padding:0 1.25rem; } }
 
     .grid-2 { display:grid; gap:3rem; }
-    @media(min-width:769px){ .grid-2{ grid-template-columns:1fr 1fr; align-items:center; gap:5rem; } }
+    /* minmax(0,1fr) e não 1fr: "1fr" é atalho pra "minmax(auto,1fr)", ou
+       seja o piso da coluna é o MIN-CONTENT dela. Com o título do hero em
+       white-space:nowrap (ver .hero-title), esse min-content passou a ser
+       a linha inteira "Forme gestores." — a coluna da esquerda inflava, e
+       o que ela ganhava saía da coluna do vídeo: a 1024px o card encolhia
+       de 432px pra 395px, e ENCOLHIA DIFERENTE a cada palavra do
+       typewriter, então o painel mudava de tamanho sozinho enquanto as
+       palavras trocavam. minmax(0,...) baixa esse piso pra zero: as duas
+       colunas ficam 50/50 fixas, e o texto que não couber transborda pro
+       gap em vez de empurrar o vizinho.
+       O .grid-2 só é usado aqui no hero — não respinga em outra seção. */
+    @media(min-width:769px){ .grid-2{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:5rem; } }
 
     /* .hide-mobile é usada só pela nav — os seis links, o "Entrar" e o
        "Agendar demo". O corte é 1054px, e não 769px, porque abaixo disso
@@ -798,6 +809,57 @@
     }
     .hero-title .accent { color:var(--green); }
 
+    /* A segunda linha ("Forme " + a palavra que o typewriter troca) não
+       pode quebrar. "líderes." cabia por acaso — é a mais curta das três;
+       "gestores." e "talentos." jogavam pra uma terceira linha.
+
+       O corte é 769px: exatamente onde o .grid-2 vira DUAS COLUNAS, que é
+       exatamente onde o problema nasce. A coluna passa a ser metade da
+       página e o texto não cabe mais nela — abaixo disso o layout é de
+       uma coluna só, o título tem a largura inteira e nunca precisou
+       disso. (Antes eu tinha posto 1054px, o corte da nav; era o corte
+       errado — deixava 769~1053px, o tablet, ainda quebrando.)
+
+       Não é falta de espaço na TELA, é falta de espaço na COLUNA: o wrap
+       obedece a largura da coluna e ignora o gap vazio de 5rem logo ao
+       lado. Por isso nowrap resolve — o excesso escorre pro gap, que não
+       tem nada. Medido nas três palavras, no pior caso de cada faixa:
+
+         786px  → coluna 313px, precisa 360px (estoura 47px)
+         1024px → coluna 432px, precisa 469px (estoura 37px)
+         1440px → coluna 560px, precisa 550px (nem estoura)
+
+       Ou seja: o pior estouro é 47px contra 80px de gap. Nunca encosta no
+       card do vídeo. E ele só pode transbordar sem empurrar nada porque o
+       .grid-2 usa minmax(0,1fr) — ver o comentário lá em cima. */
+    @media (min-width:769px) {
+      .hero-title { white-space:nowrap; }
+    }
+
+    /* cursor de máquina de escrever: uma barra RETA (não a itálica "/"
+       que normalmente aparece copiando de algum lugar) — um retângulo
+       fino desenhado no próprio CSS, e não um caractere de fonte, porque
+       glifo de cursor varia (ou nem existe) de fonte pra fonte. Ele é
+       criado pelo JS (ver o fim do body) e só existe enquanto o
+       typewriter está rodando; sem JS, ou com prefers-reduced-motion,
+       ele nunca é inserido — o título fica no texto estático de sempre. */
+    .hero-type-cursor {
+      display:inline-block;
+      width:.055em; height:.82em;
+      margin-left:.05em;
+      border-radius:1px;
+      background:var(--green);
+      vertical-align:-.08em;
+      animation:heroCursorBlink 1s ease-in-out infinite;
+    }
+    @keyframes heroCursorBlink {
+      0%, 49%   { opacity:1; }
+      50%, 100% { opacity:0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-type-cursor { animation:none; opacity:0; }
+    }
+
     .hero-body {
       font-size:1rem; line-height:1.7;
       color:var(--muted); max-width:28rem;
@@ -880,7 +942,13 @@
       transition:transform .35s cubic-bezier(.16,1,.3,1), background-color .35s ease,
                  border-color .35s ease;
     }
-    .hero-points li:hover {
+    /* .is-auto-hover é o MESMO estado do hover, posto pelo script sozinho
+       alguns segundos depois do bloco surgir — o item se destaca por
+       conta própria em vez de esperar o mouse. Os dois seletores dividem
+       a mesma regra de propósito: se um dia o hover mudar, o automático
+       muda junto, sem chance de ficarem diferentes. */
+    .hero-points li:hover,
+    .hero-points li.is-auto-hover {
       transform:translateX(5px);
       background:rgba(47,213,90,.07);
       border-color:rgba(47,213,90,.28);
@@ -894,7 +962,8 @@
       opacity:.85;
       transition:opacity .3s ease;
     }
-    .hero-points li:hover .hero-point-arrow { opacity:1; }
+    .hero-points li:hover .hero-point-arrow,
+    .hero-points li.is-auto-hover .hero-point-arrow { opacity:1; }
 
     /* o galho desce e encaixa, como quem abre a subpasta. É por isso que
        o translate parte de cima E da esquerda: o movimento desenha o
@@ -904,8 +973,16 @@
        dele: o bloco leva os 800ms da transition de [data-reveal] mais o
        escalonamento que o grupo hero-left dá a ele, e um galho que aparece
        durante a opacidade zero do pai não é visto por ninguém. */
+    /* backwards, e NÃO both: com "both" a animação segurava a opacidade
+       final (.85) pra sempre, e animação vence declaração normal na
+       cascata — ou seja o :hover da seta (opacity:1) nunca chegava a
+       valer, o galho não acendia nunca. "backwards" mantém a única parte
+       que interessa (o estado inicial durante o atraso, pra seta não
+       aparecer antes da hora) e solta o controle assim que termina; o
+       valor de repouso volta a ser o .85 da regra base, que é o mesmo
+       número — nada muda visualmente, só a cascata destrava. */
     .hero-points.in-view li .hero-point-arrow {
-      animation:heroBranchDrop .45s cubic-bezier(.34,1.56,.64,1) var(--branch-delay) both;
+      animation:heroBranchDrop .45s cubic-bezier(.34,1.56,.64,1) var(--branch-delay) backwards;
     }
     @keyframes heroBranchDrop {
       from { opacity:0;   transform:translate(-5px,-6px); }
@@ -1277,28 +1354,34 @@
     }
     .hero-pill-2 {
       top:-16px; right:24px; padding:.75rem 1.125rem;
-      /* vidro verde. O tinte é um verde-menta claro, mas fica em ALPHA
-         BAIXO de propósito: o que atravessa continua sendo o painel
-         escuro do gráfico, e é isso que segura o texto branco em cima.
-         Um verde claro cheio viraria uma etiqueta pastel e o "IA" — que
-         é o que a pílula existe pra dizer — sumiria dentro dela.
+      /* o verde do projeto, translúcido, com blur próprio.
 
-         Por que aqui o vidro funciona e antes não: quando ela era navy
-         translúcida, o tinte escuro empilhava escuro sobre escuro e a
-         pílula se dissolvia no painel. Verde sobre navy é troca de MATIZ,
-         não de luminosidade — ela se separa do fundo pela cor, e não por
-         ser mais clara, então dá pra ser translúcida e destacada ao mesmo
-         tempo. Os dois stops (menta em cima, verde do projeto embaixo)
-         dão a impressão de espessura que vidro tem.
+         A translucidez vem do ALPHA da cor, e não de um opacity no
+         elemento. A diferença importa: opacity apaga o elemento INTEIRO,
+         texto junto — o "IA" e o rótulo iam desbotar na mesma proporção
+         que o fundo, e é justamente o texto que precisa continuar firme.
+         Com alpha na cor, só a superfície fica translúcida.
+
+         O .52 não é gosto, é o teto útil: é onde o painel escuro ainda
+         atravessa (senão o vidro some e vira adesivo chapado) e o branco
+         por cima ainda passa de 5:1 de contraste, que é o que o rótulo
+         pequeno precisa. Subindo pra ~.65 o verde clareia e o rótulo
+         começa a falhar; descendo de ~.4 a pílula se dissolve no painel.
+
+         O blur é maior que o dos outros vidros (22 contra 16): quanto
+         mais cor a superfície tem, mais o fundo precisa estar dissolvido
+         pra ela não parecer um papel colorido colado por cima do gráfico.
 
          Valores fixos, sem token de tema: o painel atrás dela é escuro
          nos dois temas, então o que ela precisa contrastar não muda.
          Mesma razão da .hero-pill logo acima. */
-      background:linear-gradient(rgba(122,255,172,.34), rgba(47,213,90,.23));
-      border-color:rgba(168,255,202,.55);
+      background:rgba(47,213,90,.52);
+      backdrop-filter:blur(22px) saturate(150%);
+      -webkit-backdrop-filter:blur(22px) saturate(150%);
+      border-color:rgba(216,255,230,.5);
       box-shadow:0 8px 32px var(--shadow-lift),
                  0 0 30px -8px rgba(47,213,90,.6),
-                 inset 0 1px 0 rgba(216,255,230,.5);
+                 inset 0 1px 0 rgba(255,255,255,.34);
       animation:pillFloat 9s ease-in-out infinite reverse;
     }
     @keyframes pillFloat {
@@ -1312,9 +1395,9 @@
     .pill-val  { font-size:1.8rem; font-weight:800; color:var(--green); line-height:1; }
     .pill-val2 { font-size:1.4rem; font-weight:800; color:#fff; line-height:1; }
     .pill-lbl  { font-size:.7rem; color:rgba(255,255,255,.72); margin-top:2px; }
-    /* o rótulo subiu de .6 pra .74 e ganhou um fio de menta: sobre o
-       vidro verde, branco puro a .6 ficava acinzentado e apagado */
-    .pill-lbl2 { font-size:.65rem; color:rgba(228,255,238,.74); margin-bottom:2px; }
+    /* branco puro, e mais forte que os .6 originais: sobre o verde cheio
+       o rótulo disputa com uma superfície clara, não mais com navy */
+    .pill-lbl2 { font-size:.65rem; color:rgba(255,255,255,.86); margin-bottom:2px; }
 
     /* stats bar
        A MOLDURA (borda + o fundo cinza que aparece nos gaps de 1px)
@@ -1392,7 +1475,32 @@
        mesma curva do badgeDotPulse, pra ser o mesmo sinal.
 
        A curva das três transições é a mesma do scroll reveal, e o tempo é
-       longo de propósito: a troca acompanha a rolagem, não interrompe. */
+       longo de propósito: a troca acompanha a rolagem, não interrompe.
+
+       ATRASO + POP na entrada: sem eles a virada acontecia junto com o
+       pixel exato em que a seção cruza a faixa central (ver o
+       IntersectionObserver no fim do body) — o efeito ficava colado no
+       movimento do scroll e passava despercebido, era fácil de rolar
+       "por cima" dele sem notar. O atraso de 180ms separa a causa (cruzar
+       a faixa) do efeito (acender): a pílula espera um instante e SÓ
+       ENTÃO reage, o que lê como uma resposta deliberada, e não como
+       algo acoplado 1:1 à rolagem.
+
+       O atraso mora só na regra .is-active, não na base — é o que faz
+       ele valer SÓ pra entrada. Troca é: quando a classe é adicionada, o
+       navegador lê a transition-delay da regra que está sendo aplicada
+       (a nova), então usa os 180ms; quando é removida, o elemento volta
+       pra base sem delay, e a saída fica imediata — não faz sentido
+       atrasar o apagar de uma seção que você já passou.
+
+       O pop reaproveita a curva com overshoot que o projeto já usa pra
+       "algo automático apareceu" — o mesmo cubic-bezier(.34,1.56,.64,1)
+       do checkPop, do chartPop e do heroPointPop. Sem overshoot, o
+       eyebrow só clareava; com ele, a pílula estica um pouco além do
+       tamanho final e volta, o que dá peso físico à troca — o exagero de
+       6% é pequeno o bastante pra não sacudir o layout ao redor (é
+       transform, não afeta o fluxo) mas grande o bastante pra o olho
+       pegar o movimento com o rabo. */
     .section-eyebrow {
       position:relative;
       /* o backdrop-filter aqui em cima já criaria o contexto de
@@ -1411,17 +1519,32 @@
       transition:opacity .6s cubic-bezier(.16,1,.3,1);
       pointer-events:none;
     }
-    .section-eyebrow.is-active::after { opacity:1; }
-    .section-eyebrow.is-active { border-color:rgba(47,213,90,.3); }
+    .section-eyebrow.is-active::after {
+      opacity:1;
+      transition-delay:.18s;
+    }
+    .section-eyebrow.is-active {
+      border-color:rgba(47,213,90,.3);
+      transition-delay:.18s;
+      animation:eyebrowPop .5s cubic-bezier(.34,1.56,.64,1) .18s both;
+    }
+    @keyframes eyebrowPop {
+      0%   { scale:.92; }
+      55%  { scale:1.06; }
+      100% { scale:1; }
+    }
     .section-eyebrow.is-active::before {
-      animation:eyebrowDotPulse 2.8s cubic-bezier(.2,.6,.3,1) infinite;
+      animation:eyebrowDotPulse 2.8s cubic-bezier(.2,.6,.3,1) .18s infinite;
     }
     @keyframes eyebrowDotPulse {
       0%   { box-shadow:0 0 0 3px rgba(47,213,90,.18), 0 0 0 0    rgba(47,213,90,.5); }
       100% { box-shadow:0 0 0 3px rgba(47,213,90,.18), 0 0 0 10px rgba(47,213,90,0);  }
     }
     @media (prefers-reduced-motion: reduce) {
-      /* o verde continua marcando a seção; só a onda para */
+      /* o verde continua marcando a seção; só o exagero (pop, onda e
+         atraso) para — o estado final chega igual, só que sem drama */
+      .section-eyebrow.is-active { animation:none; transition-delay:0s; }
+      .section-eyebrow.is-active::after { transition-delay:0s; }
       .section-eyebrow.is-active::before { animation:none; }
     }
 
@@ -2166,12 +2289,28 @@
       pointer-events:none;
       will-change:opacity, transform;
     }
+    /* Uma passada só, e bem mais baixa que antes. Eram três repetições a
+       .8 de opacidade em .9s cada — piscava, e piscar três vezes lê como
+       alerta, não como "o vídeo chegou".
+
+       O que deixa soft não é só cortar as repetições: é BAIXAR O PICO e
+       ALONGAR o tempo. Metade da suavidade veio de .8 → .38 (o brilho
+       agora insinua em vez de estourar) e a outra metade de .9s → 1.7s —
+       a mesma luz, espalhada no dobro do tempo, não tem borda perceptível
+       de entrada nem de saída. O scale também encolheu (.99~1.02 →
+       .995~1.012): o que era um "pump" virou uma respirada.
+
+       1.7s também mantém o glow como a animação MAIS LONGA do conjunto —
+       o traço da borda (edgeSweep) dura 1.4s. Isso importa porque é o
+       animationend do glow que tira a classe .video-pulse (ver o script
+       no fim do body); se ele terminasse primeiro, cortaria o traço no
+       meio. */
     @keyframes video-glow-pulse {
-      0%, 100% { opacity:0;   transform:scale(.99); }
-      45%      { opacity:.8;  transform:scale(1.02); }
+      0%, 100% { opacity:0;   transform:scale(.995); }
+      50%      { opacity:.38; transform:scale(1.012); }
     }
     .about-video-frame.video-pulse::after {
-      animation:video-glow-pulse .9s cubic-bezier(.4,0,.2,1) 3;
+      animation:video-glow-pulse 1.7s cubic-bezier(.4,0,.2,1) 1;
     }
     @media (prefers-reduced-motion: reduce) {
       .about-video-frame.video-pulse::after { animation:none; }
@@ -2815,7 +2954,7 @@ html.theme-dark .hamburger {
       <!-- left -->
       <div>
         <div class="hero-badge" data-reveal data-reveal-group="hero-left"><span class="badge-dot"></span>Plataforma de T&D Corporativo</div>
-        <h1 class="hero-title" data-reveal data-reveal-group="hero-left">Treine equipes.<br>Forme <span class="accent">líderes.</span></h1>
+        <h1 class="hero-title" data-reveal data-reveal-group="hero-left" id="heroTitle">Treine equipes.<br>Forme <span class="accent">líderes.</span></h1>
         <p class="hero-body" data-reveal data-reveal-group="hero-left">Mais de 20 módulos em áreas estratégicas, <mark class="ink">trilhas personalizadas por cargo</mark> e relatórios completos para gestores.</p>
         <!-- ESTE PARÁGRAFO E A LISTA ABAIXO SÓ APARECEM NO DESKTOP
              (>=1054px) — o gate é a classe .hero-desk, no CSS do hero.
@@ -2970,7 +3109,14 @@ html.theme-dark .hamburger {
 </section>
 
 <!-- ── Sobre nós ──────────────────────────────────── -->
-<section class="about-section" id="sobre">
+<!-- data-scroll-align="center": esta section é a mais alta do projeto
+     (1014px contra 630~870 das outras) e não cabe na tela. Alinhar pelo
+     topo, como as demais, deixava todo o excedente cortado embaixo. Com
+     o atributo, os links que chegam aqui miram no CENTRO dela em vez do
+     topo, e a sobra fica repartida em cima e embaixo. É declarativo de
+     propósito: pra outra section precisar disso, basta o atributo — a
+     conta em si mora no lideraAnchorY, no script do fim do body. -->
+<section class="about-section" id="sobre" data-scroll-align="center">
   <div class="circle" style="width:280px;height:280px;background:rgba(47,213,90,.05);bottom:-80px;right:-80px;"></div>
   <div class="wrap" style="position:relative;z-index:1;">
     <div class="about-grid">
@@ -3479,6 +3625,230 @@ html.theme-dark .hamburger {
       })
     }
 
+
+  /* ── typewriter do título do hero ────────────────────────────────────
+     Dois typewriters, como pedido: um escreve o título inteiro (rápido,
+     uma vez só), o outro fica digitando/apagando o span verde em loop —
+     "líderes." → "gestores." → "talentos." → de volta.
+
+     QUANDO COMEÇA: 350ms depois do .in-view, ou seja NO MEIO do fade do
+     bloco, não depois dele. Antes eram 1100ms (os 800 da transition mais
+     300 de respiro) e sobrava um buraco — os outros elementos do grupo
+     hero-left já tinham chegado e o título ficava quase um segundo
+     vazio, porque durante o fade não há NADA pra ver: o texto foi
+     esvaziado antes (ver abaixo).
+
+     Esperar o fim formal da transition era desperdício porque a curva
+     dela (cubic-bezier(.16,1,.3,1)) é muito front-loaded. Medindo a
+     opacidade do título ao longo do próprio easing:
+
+       300ms → 0.84    400ms → 0.93    600ms → 0.99    890ms → 1.00
+
+     Ou seja, dos 890ms até o fim, os últimos ~500ms só levam de 0.93 a
+     1.0 — invisível. Aos 350ms o bloco já está praticamente todo lá, e é
+     de lá que a digitação parte.
+
+     POR QUE LIMPAR O TEXTO NÃO CAUSA FLASH: [data-reveal] já deixa o
+     elemento com opacity:0 desde o <head> (é CSS síncrono, antes de
+     qualquer JS rodar) — então o h1 já está INVISÍVEL no primeiro paint,
+     de qualquer forma. Este bloco reescreve o conteúdo dele (texto
+     original → três pedaços vazios) enquanto ele ainda está invisível, o
+     que dá a janela seguinte: como IntersectionObserver notifica de
+     forma ASSÍNCRONA (nunca antes do script atual terminar de rodar),
+     essa reescrita — síncrona — sempre termina antes que o navegador
+     tenha chance de marcar o h1 como .in-view e começar a mostrá-lo. Por
+     isso os dois guard clauses abaixo (sem IntersectionObserver, sem
+     MutationObserver): sem eles, o navegador tem um caminho SÍNCRONO
+     alternativo pra adicionar .in-view (ver o fallback no scroll reveal,
+     logo acima) que poderia vazar o texto original por um instante antes
+     da limpeza — nesses navegadores (rríssimos hoje), preferível não
+     rodar o efeito a arriscar esse flash. ── */
+  ;(function () {
+    const title = document.getElementById('heroTitle')
+    if (!title) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!('IntersectionObserver' in window) || !('MutationObserver' in window)) return
+
+    const START = 350 // ms depois do .in-view (ver o comentário acima)
+
+    const INTRO_SPEED = 26 // ms/caractere no título: passada rápida, uma vez só
+    const WORD_SPEED  = 55 // ms/caractere na palavra que roda
+    const ERASE_SPEED = 75 // ms/caractere apagando
+
+    /* Apagar é o passo MAIS LENTO aqui, e isso é escolha, não descuido:
+       o normal num typewriter de site é apagar voando (backspace segurado),
+       mas aí a troca de palavra vira um piscar e ninguém vê a palavra
+       velha sair. Devagar, a troca é legível — dá pra acompanhar o
+       "líderes." virando "gestores.".
+
+       A variação por caractere é o que separa "alguém digitando" de
+       "texto sendo revelado": cadência humana não é metrônomo, e sem
+       jitter o olho reconhece o intervalo fixo por mais bem calibrada que
+       esteja a média. Digitar varia MUITO (spread .5 — a mão hesita,
+       acelera, tropeça); apagar varia POUCO (spread .12), porque
+       backspace é tecla repetindo, cadência quase constante. Os dois
+       números diferentes são justamente o que faz cada gesto parecer o
+       que ele é. */
+    const TYPE_SPREAD  = .5
+    const ERASE_SPREAD = .12
+    function pace (base, spread) {
+      return base * (1 - spread + Math.random() * spread * 2)
+    }
+
+    // WORDS: a mesma régua do resto do site — nenhuma palavra inventada,
+    // as três já aparecem como conteúdo real em outras seções da página
+    // ("gestores" nos relatórios, "talentos" na gestão de talentos da IA).
+    // "líderes." é a primeira porque era o texto original — a virada pro
+    // typewriter fica invisível: ele apaga e retypa exatamente a mesma
+    // palavra que já estava lá.
+    const WORDS = ['líderes.', 'gestores.', 'talentos.']
+
+    // reconstrói o h1 em três pedaços digitáveis + o cursor. innerHTML
+    // não entra aqui de propósito: build via texto cru evitaria o risco
+    // de escapar mal os acentos, mas o problema real é outro — não dá
+    // pra "digitar" um <br> caractere por caractere sem quebrar o parser
+    // no meio da tag. Por isso os pedaços são nós de texto de verdade,
+    // e o <br> é inserido de uma vez, inteiro, entre eles.
+    title.textContent = ''
+    const line1 = document.createElement('span')
+    const line2 = document.createElement('span')
+    const accent = document.createElement('span')
+    accent.className = 'accent'
+    const cursor = document.createElement('span')
+    cursor.className = 'hero-type-cursor'
+    cursor.setAttribute('aria-hidden', 'true')
+
+    const line1Text = document.createTextNode('')
+    const line2Text = document.createTextNode('')
+    const accentText = document.createTextNode('')
+    line1.appendChild(line1Text)
+    line2.appendChild(line2Text)
+    accent.appendChild(accentText)
+
+    title.appendChild(line1)
+    title.appendChild(document.createElement('br'))
+    title.appendChild(line2)
+    title.appendChild(accent)
+    accent.appendChild(cursor)  // cursor mora dentro do accent: appendChild
+                                // de um nó já no DOM o MOVE, então "trocar
+                                // de linha" o cursor é só chamar de novo
+
+    // motor genérico: digita/apaga um nó de texto, um caractere por vez,
+    // via setTimeout recursivo (mesmo estilo do resto do arquivo — sem
+    // Promise em lugar nenhum, não ia começar aqui)
+    function typeChars (node, text, speed, spread, onDone) {
+      let i = 0
+      ;(function step () {
+        if (i > text.length) { if (onDone) onDone(); return }
+        node.nodeValue = text.slice(0, i)
+        i++
+        setTimeout(step, pace(speed, spread))
+      })()
+    }
+    function eraseChars (node, speed, spread, onDone) {
+      let text = node.nodeValue
+      ;(function step () {
+        if (text.length === 0) { if (onDone) onDone(); return }
+        text = text.slice(0, -1)
+        node.nodeValue = text
+        setTimeout(step, pace(speed, spread))
+      })()
+    }
+    function moveCursorTo (el) { el.appendChild(cursor) }
+
+    // fase 1: o título inteiro, rápido, uma vez só
+    function typeIntro () {
+      moveCursorTo(line1)
+      typeChars(line1Text, 'Treine equipes.', INTRO_SPEED, TYPE_SPREAD, () => {
+        moveCursorTo(line2)
+        setTimeout(() => {
+          typeChars(line2Text, 'Forme ', INTRO_SPEED, TYPE_SPREAD, () => {
+            moveCursorTo(accent)
+            setTimeout(startWordLoop, 200)
+          })
+        }, 150)
+      })
+    }
+
+    // fase 2: digita, segura pra dar tempo de ler, apaga, respira, repete
+    const HOLD  = 1600 // quanto tempo a palavra fica parada na tela
+    const BEAT  = 300  // respiro entre apagar e começar a próxima
+    let wordIndex = 0
+    function startWordLoop () { cycle() }
+    function cycle () {
+      typeChars(accentText, WORDS[wordIndex], WORD_SPEED, TYPE_SPREAD, () => {
+        setTimeout(() => {
+          eraseChars(accentText, ERASE_SPEED, ERASE_SPREAD, () => {
+            wordIndex = (wordIndex + 1) % WORDS.length
+            setTimeout(cycle, BEAT)
+          })
+        }, HOLD)
+      })
+    }
+
+    function begin () { setTimeout(typeIntro, START) }
+
+    if (title.classList.contains('in-view')) {
+      begin()
+    } else {
+      const mo = new MutationObserver(() => {
+        if (!title.classList.contains('in-view')) return
+        mo.disconnect()
+        begin()
+      })
+      mo.observe(title, { attributes: true, attributeFilter: ['class'] })
+    }
+  })()
+
+  /* ── destaque automático do tópico do hero ───────────────────────────
+     O item entra estático e, sozinho, assume o estado de hover pouco
+     depois (0,6s) — um empurrãozinho pra atenção cair ali sem depender
+     de o mouse passar por cima. O intervalo é curto de propósito: mais
+     que isso e a pessoa já desviou o olho pro resto do hero, e o
+     destaque acende pra ninguém.
+
+     A conta da espera não é um número chutado: ela é lida do próprio
+     elemento. O [data-reveal] dá a ele um transition-delay em linha (o
+     escalonamento do grupo hero-left, 360ms hoje), e a transition em si
+     dura 800ms — só depois disso o bloco terminou de surgir. Ler o delay
+     do getComputedStyle em vez de repetir "360" aqui significa que, se
+     alguém inserir outro item no grupo lá em cima e o escalonamento
+     mudar, esta espera se ajusta sozinha em vez de silenciosamente
+     começar a contar do momento errado.
+
+     A classe fica: o item permanece destacado depois disso. Como o
+     .is-auto-hover divide a regra com o :hover, passar o mouse depois não
+     "desliga" nada — já está no mesmo estado. ── */
+  ;(function () {
+    const list = document.querySelector('.hero-points')
+    if (!list) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!('MutationObserver' in window)) return
+
+    const item = list.querySelector('li')
+    if (!item) return
+
+    const REVEAL_MS = 800  // duração da transition de [data-reveal]
+    const WAIT      = 600  // o respiro depois que o surgimento termina
+
+    function arm () {
+      // transitionDelay vem como "0.36s"; sem valor, cai em 0
+      const stagger = (parseFloat(getComputedStyle(list).transitionDelay) || 0) * 1000
+      setTimeout(() => item.classList.add('is-auto-hover'), stagger + REVEAL_MS + WAIT)
+    }
+
+    if (list.classList.contains('in-view')) {
+      arm()
+    } else {
+      const mo = new MutationObserver(() => {
+        if (!list.classList.contains('in-view')) return
+        mo.disconnect()
+        arm()
+      })
+      mo.observe(list, { attributes: true, attributeFilter: ['class'] })
+    }
+  })()
+
     window.initScrollReveal = initScrollReveal
     document.addEventListener('DOMContentLoaded', () => initScrollReveal())
     // caso o script rode depois do DOMContentLoaded (defer/final do body)
@@ -3858,6 +4228,48 @@ html.theme-dark .hamburger {
      scroll-margin-top do CSS). ─────────────────────────────────────── */
   const NAV_GAP = 16 // mesma folga usada no scroll-margin-top (5rem - 4rem de header)
 
+  /* ── onde a rolagem tem que parar pra uma âncora ────────────────────
+     Uma conta só, usada pelos TRÊS caminhos que levam a uma section: os
+     links do nav (Headerscroll.js), os do menu lateral (logo abaixo) e
+     qualquer outra âncora solta na página, como o "Ver demonstração" do
+     hero (o handler delegado no fim deste bloco). Antes cada um tinha a
+     sua conta, com offsets que nem batiam entre si — 84px num, 80px no
+     outro, e o terceiro por conta do navegador.
+
+     Duas mirasesses:
+     · padrão — encosta o topo da section logo abaixo do header. É o que
+       serve pra quase tudo: a section cabe na tela e o começo dela é o
+       que interessa ver;
+     · center (via data-scroll-align="center") — reparte a sobra em cima
+       e embaixo. Pra section MAIOR que a tela, "sobra" é negativa e a
+       conta corta metade em cima e metade embaixo em vez de jogar todo
+       o excedente pro rodapé. É o caso do #sobre.
+
+     A altura útil desconta o header: ele é fixo e fica por cima, então
+     centralizar na viewport inteira empurraria a section pra baixo dele. */
+  function lideraAnchorY (target) {
+    const nav = document.querySelector('.nav')
+    const navHeight = nav ? nav.offsetHeight : 64
+    const rect = target.getBoundingClientRect()
+    const top = rect.top + window.scrollY
+
+    if (target.dataset && target.dataset.scrollAlign === 'center') {
+      const usable = window.innerHeight - navHeight
+      return Math.max(top - navHeight - (usable - rect.height) / 2, 0)
+    }
+    return Math.max(top - navHeight - NAV_GAP, 0)
+  }
+  window.lideraAnchorY = lideraAnchorY
+
+  // rolagem pelo animador, pra âncora e roda andarem na mesma velocidade;
+  // o fallback cobre quem pediu menos movimento (lá o animador nem sobe)
+  function lideraGoTo (target) {
+    const y = lideraAnchorY(target)
+    if (window.lideraScrollTo) window.lideraScrollTo(y)
+    else window.scrollTo({ top: y, behavior: 'smooth' })
+  }
+  window.lideraGoTo = lideraGoTo
+
   menuPanel.querySelectorAll('.menu-nav a[href^="#"]').forEach(a => {
     a.addEventListener('click', (e) => {
       const targetId = a.getAttribute('href')
@@ -3867,15 +4279,35 @@ html.theme-dark .hamburger {
       e.preventDefault()
       closeMenu()
 
-      setTimeout(() => {
-        const navHeight = document.querySelector('.nav').offsetHeight
-        const y = Math.max(target.getBoundingClientRect().top + window.scrollY - navHeight - NAV_GAP, 0)
-        // pelo animador, pra âncora e roda andarem na mesma velocidade;
-        // o fallback cobre quem pediu menos movimento (lá o módulo nem sobe)
-        if (window.lideraScrollTo) window.lideraScrollTo(y)
-        else window.scrollTo({ top: y, behavior: 'smooth' })
-      }, 60)
+      // o respiro de 60ms continua: com o menu fechando, o body ainda está
+      // com overflow:hidden e a altura da viewport muda logo em seguida —
+      // medir antes disso dá um alvo errado (ver comentário acima)
+      setTimeout(() => lideraGoTo(target), 60)
     })
+  })
+
+  /* ── âncoras que não passam por nav nem menu ────────────────────────
+     O "Ver demonstração" do hero aponta pra #sobre e não estava em
+     nenhum dos dois handlers: caía na âncora nativa do navegador, que só
+     sabe alinhar pelo topo (scroll-margin-top) e ignora o
+     data-scroll-align. Este delegado pega o que sobrou.
+
+     O defaultPrevented é o que evita atropelar quem já resolveu: os
+     handlers de nav e menu estão no próprio <a>, então rodam antes deste
+     (que está no document) e já marcaram o evento. ── */
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented) return
+    const a = e.target.closest && e.target.closest('a[href^="#"]')
+    if (!a) return
+
+    const href = a.getAttribute('href')
+    if (!href || href.length < 2) return
+
+    const target = document.querySelector(href)
+    if (!target) return
+
+    e.preventDefault()
+    lideraGoTo(target)
   })
 
   /* ── login modal ──────────────────────────────────── */

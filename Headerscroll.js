@@ -366,7 +366,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const target = document.querySelector(href);
         if (!target) return;
         e.preventDefault();
-        const y = target.getBoundingClientRect().top + window.pageYOffset - 84;
+        // a mesma conta dos outros caminhos (índex, fim do body). O 84px
+        // fixo que ficava aqui era um terceiro offset, que nem batia com
+        // os 80px do menu — e não sabia do data-scroll-align.
+        const y = (typeof window.lideraAnchorY === 'function')
+          ? window.lideraAnchorY(target)
+          : target.getBoundingClientRect().top + window.pageYOffset - 84;
         smoothTo(y);
       });
     });
