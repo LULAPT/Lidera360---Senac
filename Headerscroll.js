@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* clicar no header minimizado volta ao topo */
   header.addEventListener('click', function () {
-    if (minimized) window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (minimized) smoothTo(0);
   });
 
   /* ── scroll suave + link ativo no menu ── */
@@ -345,6 +345,17 @@ document.addEventListener('DOMContentLoaded', function () {
       return section ? { link, offsetTop: section.offsetTop } : null;
     }).filter(Boolean);
   }
+  /* rolagem pelo animador do index (window.lideraScrollTo), pra âncora e
+     roda andarem na mesma velocidade — o par de tokens --scroll-step /
+     --scroll-ease no CSS governa as duas. Resolvido na hora do clique, e
+     não na carga, então não depende da ordem em que os scripts entram.
+     O fallback cobre quem pediu menos movimento: lá o animador nem sobe,
+     e o smooth nativo é o comportamento certo. */
+  function smoothTo(y) {
+    if (typeof window.lideraScrollTo === 'function') window.lideraScrollTo(y);
+    else window.scrollTo({ top: y, behavior: 'smooth' });
+  }
+
   cacheSectionOffsets();
 
   if (navLinks) {
@@ -356,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!target) return;
         e.preventDefault();
         const y = target.getBoundingClientRect().top + window.pageYOffset - 84;
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        smoothTo(y);
       });
     });
   }

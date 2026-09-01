@@ -78,6 +78,39 @@
          fundo. No claro é o navy; no escuro vira preto puro, porque
          sombra colorida sobre fundo escuro só suja a cor. */
       --shadow-lift: rgba(15,18,114,.15);
+      /* faísca que orbita a borda da foto do hero. No claro a luz corre
+         por cima de uma foto iluminada, então precisa de corpo: rasto
+         com verde cheio e núcleo levemente esverdeado — branco puro aqui
+         não lê como luz, lê como falha na imagem. */
+      /* ── rolagem ──────────────────────────────────────────────────
+         Os dois números que controlam a sensação da roda do mouse e dos
+         links de âncora em toda a página. Quem lê é o módulo de rolagem
+         no fim do body, uma vez, na carga — mexeu aqui, recarrega.
+
+         --scroll-step: quanto anda por giro da roda, como multiplicador
+           do que o navegador já mandaria. 1 mantém a distância nativa e
+           só adiciona a suavização; 1.4 deixa a página "mais leve".
+         --scroll-ease: quanto do caminho que falta é consumido a cada
+           frame. Alto (.25) chega rápido e para seco; baixo (.06) fica
+           flutuando. O valor é corrigido pelo tempo, então a sensação é
+           a mesma em tela de 60Hz e de 144Hz. */
+      --scroll-step: 1;
+      --scroll-ease: .12;
+
+      --orbit-tail: rgba(47,213,90,.32);
+      --orbit-glow: rgba(47,213,90,.95);
+      --orbit-head: #d6ffe4;
+      /* painel do gráfico do hero. Ele é escuro NOS DOIS temas de
+         propósito: é a tela do produto aparecendo na home, e a linha
+         verde só brilha sobre fundo escuro. O que muda entre os temas é
+         a profundidade — aqui, sobre o creme, um navy vivo, senão o
+         painel vira um buraco preto no meio da página. */
+      --chart-bg-a: #1c1f4a;
+      --chart-bg-b: #0e1030;
+      --chart-grid: rgba(255,255,255,.055);
+      --chart-line: #2fd55a;
+      --chart-glow: rgba(47,213,90,.55);
+      --chart-label: rgba(255,255,255,.62);
       /* cores das bolinhas decorativas do fundo. As de navy precisavam
          de token próprio: no tema escuro, navy sobre #12132b some. */
       --circle-navy:     rgba(15,18,114,.04);
@@ -98,6 +131,20 @@
       --glass-stroke: rgba(255,255,255,.12);
       --glass-sheen:  rgba(255,255,255,.16);
       --shadow-lift:  rgba(0,0,0,.45);
+      /* no escuro o contraste já vem de graça: rasto mais discreto pra
+         não virar risco verde, e núcleo branco, que é o que dá o estouro */
+      --orbit-tail: rgba(47,213,90,.24);
+      --orbit-glow: rgba(120,255,164,.98);
+      --orbit-head: #ffffff;
+      /* no escuro o painel afunda em vez de saltar: mais escuro que o
+         --bg da página, pra ler como uma tela embutida. A linha ganha
+         um verde um tom acima, que é o que sustenta o brilho no escuro. */
+      --chart-bg-a: #14152f;
+      --chart-bg-b: #07081d;
+      --chart-grid: rgba(255,255,255,.05);
+      --chart-line: #3ee06a;
+      --chart-glow: rgba(62,224,106,.6);
+      --chart-label: rgba(255,255,255,.6);
       --circle-navy:     rgba(143,150,255,.07);
       --circle-navy-dot: #6f75c9;
     }
@@ -113,6 +160,20 @@
         --glass-stroke: rgba(255,255,255,.12);
         --glass-sheen:  rgba(255,255,255,.16);
         --shadow-lift:  rgba(0,0,0,.45);
+      /* no escuro o contraste já vem de graça: rasto mais discreto pra
+         não virar risco verde, e núcleo branco, que é o que dá o estouro */
+      --orbit-tail: rgba(47,213,90,.24);
+      --orbit-glow: rgba(120,255,164,.98);
+      --orbit-head: #ffffff;
+      /* no escuro o painel afunda em vez de saltar: mais escuro que o
+         --bg da página, pra ler como uma tela embutida. A linha ganha
+         um verde um tom acima, que é o que sustenta o brilho no escuro. */
+      --chart-bg-a: #14152f;
+      --chart-bg-b: #07081d;
+      --chart-grid: rgba(255,255,255,.05);
+      --chart-line: #3ee06a;
+      --chart-glow: rgba(62,224,106,.6);
+      --chart-label: rgba(255,255,255,.6);
         --circle-navy:     rgba(143,150,255,.07);
         --circle-navy-dot: #6f75c9;
       }
@@ -132,8 +193,16 @@
     .grid-2 { display:grid; gap:3rem; }
     @media(min-width:769px){ .grid-2{ grid-template-columns:1fr 1fr; align-items:center; gap:5rem; } }
 
+    /* .hide-mobile é usada só pela nav — os seis links, o "Entrar" e o
+       "Agendar demo". O corte é 1054px, e não 769px, porque abaixo disso
+       não há largura pra tudo caber na mesma linha: os links até apareciam,
+       mas o gap de 2rem entre eles ia comendo o respiro dos botões e a nav
+       ficava espremida contra a logo. Daí pra baixo ela fica compacta —
+       logo + hambúrguer — e nada se perde: os seis links estão no
+       .menu-nav e os dois CTAs no .menu-footer do menu lateral.
+       Mexeu aqui, mexe também no @media da nav lá embaixo (mesmo corte). */
     .hide-mobile { display:none; }
-    @media(min-width:769px){ .hide-mobile{ display:flex; } }
+    @media(min-width:1054px){ .hide-mobile{ display:flex; } }
 
     /* ── decorative circles ─────────────────────────── */
     /* ── bolinhas decorativas do fundo ────────────────────
@@ -342,6 +411,7 @@
     .menu-panel.open .menu-nav a:nth-child(3) { animation-delay:.20s; }
     .menu-panel.open .menu-nav a:nth-child(4) { animation-delay:.25s; }
     .menu-panel.open .menu-nav a:nth-child(5) { animation-delay:.30s; }
+    .menu-panel.open .menu-nav a:nth-child(6) { animation-delay:.35s; }
     .menu-panel.closing .menu-nav a { animation:none; opacity:0; transition:opacity .15s ease; }
 
     .menu-header {
@@ -754,20 +824,347 @@
     }
     .hero-img-wrap {
       border-radius:24px; overflow:hidden;
-      box-shadow:0 24px 60px var(--shadow-lift);
-      border:2px solid var(--border);
     }
-    .hero-img { width:100%; height:340px; object-fit:cover; display:block; }
+    /* ── gráfico do hero ─────────────────────────────────────────────
+       Substituiu a foto de banco de imagens. Como é SVG inline: não tem
+       download nenhum pra esperar (a foto vinha do Unsplash), fica
+       nítido em qualquer densidade de tela, e as cores saem dos tokens
+       — então ele acompanha o tema em vez de ser um retângulo fixo.
 
-    /* as pílulas flutuam SOBRE a foto do hero — vidro de verdade aqui
-       vale a pena, porque tem imagem por baixo pra ser borrada (é o
-       caso em que backdrop-filter realmente aparece). Também passaram
-       a flutuar de leve, cada uma no seu ritmo. */
+       De propósito NÃO tem número em eixo nenhum. A curva ilustra
+       evolução, não afirma medição — mesma régua dos comentários das
+       pílulas e da stats-bar, que já tinham trocado métrica inventada
+       por dado documentado.
+
+       O desenho vem em três caminhos no mesmo viewBox de 560x340, com
+       preserveAspectRatio="none": o painel estica junto com a coluna do
+       hero e o traçado acompanha. Quem segura a espessura da linha e da
+       grade nesse esticão é o vector-effect="non-scaling-stroke" — sem
+       ele o traço engordaria na horizontal e afinaria na vertical. */
+    .hero-chart {
+      position:relative;
+      width:100%; height:340px;
+      background:linear-gradient(160deg, var(--chart-bg-a), var(--chart-bg-b));
+      overflow:hidden;
+    }
+    .hero-chart__plot {
+      position:absolute; inset:0;
+      width:100%; height:100%; display:block;
+    }
+    .hero-chart__grid path { fill:none; stroke:var(--chart-grid); stroke-width:1; }
+
+    /* as paradas do gradiente moram no CSS, e não em stop-color="" no
+       markup: var() não funciona dentro de atributo de apresentação —
+       o SVG lê a string crua, não acha cor nenhuma e o preenchimento
+       some. Como propriedade CSS, stop-color aceita var() normalmente. */
+    .hero-chart__stop-a { stop-color:var(--chart-line); stop-opacity:.42; }
+    .hero-chart__stop-b { stop-color:var(--chart-line); stop-opacity:.10; }
+    .hero-chart__stop-c { stop-color:var(--chart-line); stop-opacity:0;   }
+
+    .hero-chart__area { fill:url(#heroChartFill); }
+
+    .hero-chart__line {
+      fill:none;
+      stroke:var(--chart-line);
+      stroke-width:2.5;
+      stroke-linecap:round; stroke-linejoin:round;
+      filter:drop-shadow(0 0 6px var(--chart-glow));
+    }
+
+    /* O gráfico se desenha por CORTINA: um retângulo dentro de um
+       <clipPath> cresce da esquerda pra direita e vai revelando linha e
+       área juntas, como um plot sendo traçado.
+
+       A tentação era o truque clássico do stroke-dasharray com
+       pathLength="1" — só que ele NÃO convive com o
+       vector-effect="non-scaling-stroke" que a linha precisa: com o
+       vector-effect ligado, o dash passa a ser medido em pixels de tela
+       em vez de fração do traçado, e "1" vira um tracejado de 1px. A
+       cortina não depende do comprimento do path, então escapa disso —
+       e ainda anima em transform, que vai pra GPU.
+
+       O .in-view é o mesmo do scroll reveal: nenhum JS novo aqui. */
+    .hero-chart__wipe {
+      transform-box:fill-box;
+      transform-origin:left center;
+      transform:scaleX(0);
+    }
+    .hero-card.in-view .hero-chart__wipe {
+      animation:chartWipe 2.2s cubic-bezier(.22,.61,.36,1) .35s forwards;
+    }
+    /* a bolinha não aparece por fade: ela ESTOURA quando a cortina chega
+       ao fim do traçado (2,2s de cortina + os 0,35s de espera dela). O
+       pop passa de 1.5 e volta pra 1 — é o que dá a sensação de que a
+       linha bateu ali. Sem halo nenhum: quem sinaliza é o movimento, e o
+       anel logo abaixo, não um borrão de luz em volta. */
+    .hero-card.in-view .hero-chart__head {
+      animation:chartPop .55s cubic-bezier(.34,1.56,.64,1) 2.55s forwards;
+    }
+    @keyframes chartWipe { to { transform:scaleX(1); } }
+    @keyframes chartFade { to { opacity:1; } }
+    @keyframes chartPop {
+      0%   { opacity:0; scale:0;   }
+      55%  { opacity:1; scale:1.5; }
+      100% { opacity:1; scale:1;   }
+    }
+
+    /* ── ponta da linha ──────────────────────────────────────────────
+       Ela mora no .hero-card, e NÃO dentro do .hero-img-wrap junto com o
+       resto do gráfico. O motivo é o overflow:hidden do wrap (é ele que
+       arredonda os cantos do painel): a linha termina exatamente na
+       beirada direita, então uma bolinha centrada ali seria cortada ao
+       meio pelo recorte — z-index não resolve, recorte não é empilhamento.
+       Fora do wrap ela aparece inteira e fica POR CIMA da moldura, que é
+       justamente o que dá o efeito de a linha furar a borda.
+
+       As duas coordenadas saem da geometria, não de tentativa e erro:
+       · x = calc(100% - 1px) — a beirada direita do conteúdo do painel,
+         descontando o fio de 1px da borda do wrap;
+       · y = 71px — 1px da mesma borda mais os 70 do viewBox onde a linha
+         termina. Cabe direto em pixel porque o viewBox tem 340 de altura
+         e o painel tem 340px: a conversão vertical é 1:1. Mexeu na altura
+         do .hero-chart, reveja este número. */
+    .hero-chart__head {
+      position:absolute;
+      left:calc(100% - 1px); top:71px;
+      translate:-50% -50%;
+      z-index:2;                       /* acima da moldura e do vidro dela */
+      width:9px; height:9px;
+      border-radius:50%;
+      background:var(--chart-line);
+      opacity:0;
+    }
+    .hero-chart__head::after {
+      content:"";
+      position:absolute; inset:0;
+      border-radius:50%;
+      border:1.5px solid var(--chart-line);
+      animation:badgeDotPulse 2.8s cubic-bezier(.2,.6,.3,1) infinite;
+    }
+
+    .hero-chart__caption {
+      position:absolute; top:1.15rem; left:1.35rem;
+      display:flex; align-items:center; gap:.4rem;
+      font-size:.72rem; font-weight:600; letter-spacing:.01em;
+      color:var(--chart-label);
+    }
+    /* a seta mira a legenda quando o painel recebe o mouse: parada ela
+       aponta pra cima-direita, e no hover deita na horizontal, apontando
+       pro texto ao lado. Ela GIRA no lugar, sem deslocamento nenhum —
+       rotate puro, sem translate junto.
+
+       Girar no próprio eixo funciona aqui porque o desenho é centrado na
+       caixa: o traçado ocupa de (4,4) a (12,12) num viewBox de 16, ou
+       seja o centro dele é o centro do elemento, que é justamente onde o
+       transform-origin cai por padrão. Não precisa corrigir origem.
+
+       O giro é de 45° e não de um valor escolhido no olho: o traçado sobe
+       exatamente na diagonal (de 4,12 até 12,4), então 45° no sentido
+       horário zera a componente vertical e põe a ponta no eixo — qualquer
+       outro ângulo deixaria a seta torta em vez de reta.
+
+       O hover fica atrás do (hover:hover) que o resto do arquivo já usa:
+       em tela de toque o :hover gruda depois do toque, e a seta ficaria
+       deitada pra sempre, parecendo defeito. */
+    .hero-chart__caption svg {
+      color:var(--chart-line); flex-shrink:0;
+      transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    @media (hover:hover) and (pointer:fine) {
+      .hero-chart:hover .hero-chart__caption svg {
+        transform:rotate(45deg);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-chart__caption svg { transition:none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      /* sem animação, mas o gráfico continua completo na tela */
+      .hero-chart__wipe { transform:scaleX(1); }
+      .hero-chart__head { opacity:1; scale:1; }
+      .hero-chart__head::after { animation:none; opacity:0; }
+    }
+
+    /* ── moldura de vidro (foto do hero + player do "sobre nós") ──────
+       A borda era um 2px chapado em --border: uma linha cinza em volta
+       de uma foto, sem conversa nenhuma com o vidro das pílulas que
+       flutuam bem em cima dela. Agora as DUAS molduras da página usam a
+       mesma receita — e por isso a regra lista as duas juntas: o que
+       mudar aqui muda nas duas, sem uma virar cópia velha da outra.
+
+       O que as duas dividem são DUAS camadas:
+       · a borda em si — stroke fino de vidro mais um segundo fio, verde
+         e bem discreto, por fora (o 0 0 0 1px): devolve a espessura que
+         o 2px cinza dava, só que com cor;
+       · ::before, permanente — o brilho de vidro POR CIMA do conteúdo.
+         Precisa ser camada própria: inset box-shadow no elemento fica
+         atrás do conteúdo, e a <img>/<video> engoliria o brilho.
+
+       A ANIMAÇÃO é de cada uma. O player acende UMA vez e apaga (::after,
+       logo abaixo); a foto do hero tem uma faísca que orbita a borda sem
+       parar (.edge-orbit, mais adiante). A moldura é a mesma peça; o que
+       separa as duas é o comportamento — o bloco de entrada fica vivo o
+       tempo todo, o resto da página só reage quando você chega nele.
+
+       Os dois wraps têm overflow:hidden, então nada disso pode ser
+       desenhado pra fora; com inset:0 + pointer-events:none as camadas
+       ficam dentro e não roubam clique nenhum dos controles do player. */
+    .hero-img-wrap,
+    .about-video-wrap {
+      position:relative;
+      /* prende o z-index das camadas aqui dentro — sem isso o ::after
+         (z-index:5) passaria por cima das pílulas do hero */
+      isolation:isolate;
+      border:1px solid var(--glass-stroke);
+      box-shadow:0 24px 60px var(--shadow-lift),
+                 0 0 0 1px rgba(47,213,90,.12),
+                 0 0 30px -10px rgba(47,213,90,.25);
+    }
+
+    /* camada permanente: o vidro da borda */
+    .hero-img-wrap::before,
+    .about-video-wrap::before {
+      content:"";
+      position:absolute; inset:0;
+      border-radius:inherit;
+      pointer-events:none;
+      z-index:4;
+      box-shadow:inset 0 1px 0 var(--glass-sheen),
+                 inset 0 0 0 1px rgba(255,255,255,.07);
+    }
+
+    /* SÓ NO PLAYER — camada de uma vez só: o traço verde correndo pela
+       borda. O truque do anel é o par de máscaras — uma na content-box,
+       outra na border-box, subtraídas uma da outra: sobra exatamente o
+       padding (2px) das quatro beiradas e o miolo some. O que anda é o
+       background-position de uma faixa de luz diagonal; roda 1,4s e
+       acaba, então o custo de pintura é pontual — bem diferente do
+       box-shadow gigante que era repintado a cada frame e deixava o
+       pulse do player travado (ver comentário lá embaixo). */
+    .about-video-wrap::after {
+      content:"";
+      position:absolute; inset:0;
+      border-radius:inherit;
+      pointer-events:none;
+      z-index:5;
+      padding:2px;                     /* espessura do traço */
+      background:linear-gradient(115deg,
+                   rgba(47,213,90,0)   36%,
+                   rgba(47,213,90,.65) 45%,
+                   #b6ffcb             50%,
+                   rgba(47,213,90,.65) 55%,
+                   rgba(47,213,90,0)   64%);
+      background-size:260% 100%;
+      background-repeat:no-repeat;
+      background-position:140% 0;
+      -webkit-mask:linear-gradient(#000 0 0) content-box,
+                   linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;
+              mask:linear-gradient(#000 0 0) content-box,
+                   linear-gradient(#000 0 0);
+              mask-composite:exclude;
+      opacity:0;
+    }
+    @keyframes edgeSweep {
+      0%   { opacity:0; background-position:140% 0; }
+      8%   { opacity:1; }
+      88%  { opacity:1; }
+      100% { opacity:0; background-position:-40% 0; }
+    }
+    /* quem dispara é o mesmo .video-pulse que já acendia o brilho do
+       player — o traço não precisou de gatilho novo */
+    .about-video-frame.video-pulse .about-video-wrap::after {
+      animation:edgeSweep 1.4s cubic-bezier(.4,0,.2,1) 1;
+    }
+    /* em tela cheia não existe moldura pra destacar */
+    .about-video-wrap.is-fullscreen::before,
+    .about-video-wrap.is-fullscreen::after { display:none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .about-video-frame.video-pulse .about-video-wrap::after { animation:none; }
+    }
+
+    /* ── SÓ NO HERO — a faísca que orbita a borda ─────────────────────
+       Uma luz dando a volta na moldura, sem começo nem fim. É o estado
+       ocioso: não espera hover, não espera scroll, só fica lá girando.
+
+       Duas camadas, e a divisão de trabalho entre elas é o pulo do gato:
+       · .edge-orbit é o RECORTE — o mesmo par de máscaras do traço do
+         player (content-box menos border-box), que deixa visível só o
+         anel de 2px das quatro beiradas. Máscara vale pro elemento E
+         pra tudo que está dentro dele, então basta ela morar aqui;
+       · ::before é a LUZ — um quadrado bem maior que a foto, centrado,
+         pintado com um conic-gradient de rasto curto, girando 360°.
+
+       Por que girar o ELEMENTO e não o ângulo do gradiente: mexer no
+       `from <angle>` exige registrar a custom property com @property e
+       repinta o gradiente inteiro a cada frame, pra sempre. Girando o
+       elemento é só transform — o compositor resolve na GPU e a CPU não
+       fica presa numa animação que nunca acaba. É também o que o
+       "galaxy button" que inspirou isto faz.
+
+       Por que 200% e não 100%: o quadrado tem que ser maior que a
+       DIAGONAL da foto. Com 100% os cantos ficariam descobertos nos 45°
+       da volta e a luz sumiria quatro vezes por giro. 200% cobre até a
+       proporção mais apertada que a foto assume no celular.
+
+       A luz só entra depois que o card termina de surgir — o .in-view é
+       o mesmo que o scroll reveal já põe, então não precisou de JS. */
+    .edge-orbit {
+      position:absolute; inset:0;
+      border-radius:inherit;
+      padding:2px;                     /* espessura do anel */
+      pointer-events:none;
+      z-index:6;                       /* acima do vidro da borda (4) */
+      opacity:0;
+      transition:opacity .8s ease .45s;
+      -webkit-mask:linear-gradient(#000 0 0) content-box,
+                   linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor;
+              mask:linear-gradient(#000 0 0) content-box,
+                   linear-gradient(#000 0 0);
+              mask-composite:exclude;
+    }
+    .hero-card.in-view .edge-orbit { opacity:1; }
+
+    .edge-orbit::before {
+      content:"";
+      position:absolute;
+      top:50%; left:50%;
+      width:200%; aspect-ratio:1;
+      translate:-50% -50%;
+      background:conic-gradient(from 0deg,
+                   transparent            0 46%,
+                   var(--orbit-tail)        68%,
+                   var(--orbit-glow)        76.5%,
+                   var(--orbit-head)        78%,
+                   var(--orbit-glow)        79%,
+                   transparent              81%);
+      animation:edgeOrbit 5s linear infinite;
+    }
+    @keyframes edgeOrbit { to { rotate:360deg; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .edge-orbit { display:none; }
+    }
+
+    /* as pílulas flutuam SOBRE o painel do gráfico — vidro de verdade
+       aqui vale a pena, porque tem algo por baixo pra ser borrado (é o
+       caso em que backdrop-filter realmente aparece). Também flutuam de
+       leve, cada uma no seu ritmo.
+
+       O vidro delas NÃO segue mais o tema, e é de propósito: o painel
+       do gráfico é escuro nos dois temas, então um vidro creme (o
+       --glass-bg do tema claro) ficava lavado por cima dele e comia o
+       contraste do texto. Como o fundo que elas borram é sempre escuro,
+       o vidro é sempre escuro — e o rótulo é branco em vez de --muted,
+       que é cinza médio e sumia no mesmo lugar. */
     .hero-pill {
       position:absolute;
       border-radius:16px;
-      background:var(--glass-bg);
-      border:1px solid var(--glass-stroke);
+      background:rgba(20,21,47,.42);
+      border:1px solid rgba(255,255,255,.16);
       backdrop-filter:blur(16px) saturate(160%);
       -webkit-backdrop-filter:blur(16px) saturate(160%);
       box-shadow:0 8px 32px var(--shadow-lift),
@@ -780,6 +1177,13 @@
     }
     .hero-pill-2 {
       top:-16px; right:24px; padding:.75rem 1.125rem;
+      /* navy cheio, e de propósito. O tinte translúcido que ela teve por
+         um tempo fazia sentido quando o fundo era uma FOTO: dava pra ver
+         algo atravessando o vidro. Agora atrás dela tem o painel escuro
+         do gráfico, então o tinte só escurecia mais o que já era escuro e
+         a pílula se dissolvia no painel. Cheia, ela volta a ser um bloco
+         de cor — o único ponto de navy vivo nesse canto. É também o que
+         a separa da pill-1, que é vidro de verdade. */
       background:linear-gradient(rgba(15,18,114,.82), rgba(15,18,114,.82));
       border-color:rgba(255,255,255,.14);
       box-shadow:0 8px 32px var(--shadow-lift),
@@ -796,7 +1200,7 @@
 
     .pill-val  { font-size:1.8rem; font-weight:800; color:var(--green); line-height:1; }
     .pill-val2 { font-size:1.4rem; font-weight:800; color:#fff; line-height:1; }
-    .pill-lbl  { font-size:.7rem; color:var(--muted); margin-top:2px; }
+    .pill-lbl  { font-size:.7rem; color:rgba(255,255,255,.72); margin-top:2px; }
     .pill-lbl2 { font-size:.65rem; color:rgba(255,255,255,.6); margin-bottom:2px; }
 
     /* stats bar
@@ -847,6 +1251,65 @@
       width:6px; height:6px; border-radius:50%;
       background:var(--green);
       box-shadow:0 0 0 3px rgba(47,213,90,.18);
+    }
+
+    /* ── seção corrente ──────────────────────────────────────────────
+       Só UM eyebrow fica aceso por vez: o da seção que está passando
+       pelo meio da tela. Quem troca a classe é o script no fim do body.
+
+       O estado aceso é o mesmo do .hero-badge — verde por cima do vidro.
+       A ideia é que o selo do hero deixe de ser um caso especial e vire o
+       primeiro de uma sequência: a página tem sempre um selo vivo, e ele
+       é o da seção em que você está.
+
+       O verde entra como CAMADA que dá fade, e não como troca de
+       background — e isso não é preciosismo, é o que faz a virada ser
+       suave. O aceso do .hero-badge é um linear-gradient por cima do
+       vidro, e background-image NÃO interpola entre "nenhuma imagem" e
+       "uma imagem": por mais transition que se ponha, ela aparece inteira
+       de um frame pro outro. Um ::after próprio com opacity resolve —
+       opacity interpola, e ainda é das poucas coisas que o compositor
+       resolve sem repintar nada.
+
+       A onda sai do box-shadow do ::before, e não de um segundo elemento
+       como no .badge-dot: pseudo-elemento não tem pseudo-elemento, então
+       não dá pra pendurar um ::after no ponto pra fazer o anel. Duas
+       sombras resolvem — a primeira é o anel parado que o ponto já tinha
+       (fica constante), a segunda é a que abre e some. Mesmo ritmo e
+       mesma curva do badgeDotPulse, pra ser o mesmo sinal.
+
+       A curva das três transições é a mesma do scroll reveal, e o tempo é
+       longo de propósito: a troca acompanha a rolagem, não interrompe. */
+    .section-eyebrow {
+      position:relative;
+      /* o backdrop-filter aqui em cima já criaria o contexto de
+         empilhamento de que o ::after (z-index:-1) precisa pra ficar
+         ACIMA do vidro e abaixo do texto; isolation deixa isso explícito
+         e segura o caso de o blur não ter suporte */
+      isolation:isolate;
+      transition:border-color .6s cubic-bezier(.16,1,.3,1);
+    }
+    .section-eyebrow::after {
+      content:""; position:absolute; inset:0;
+      z-index:-1;
+      border-radius:inherit;
+      background:rgba(47,213,90,.14);
+      opacity:0;
+      transition:opacity .6s cubic-bezier(.16,1,.3,1);
+      pointer-events:none;
+    }
+    .section-eyebrow.is-active::after { opacity:1; }
+    .section-eyebrow.is-active { border-color:rgba(47,213,90,.3); }
+    .section-eyebrow.is-active::before {
+      animation:eyebrowDotPulse 2.8s cubic-bezier(.2,.6,.3,1) infinite;
+    }
+    @keyframes eyebrowDotPulse {
+      0%   { box-shadow:0 0 0 3px rgba(47,213,90,.18), 0 0 0 0    rgba(47,213,90,.5); }
+      100% { box-shadow:0 0 0 3px rgba(47,213,90,.18), 0 0 0 10px rgba(47,213,90,0);  }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      /* o verde continua marcando a seção; só a onda para */
+      .section-eyebrow.is-active::before { animation:none; }
     }
 
     .section-title {
@@ -1266,9 +1729,11 @@
       position:relative; width:100%;
       aspect-ratio:16/9;
       border-radius:24px; overflow:hidden;
-      box-shadow:0 24px 60px var(--shadow-lift);
-      border:2px solid var(--border);
       background:var(--navyd);
+      /* borda, brilho de vidro e o traço verde que corre nela saíram
+         daqui: vêm da regra que este wrap divide com o .hero-img-wrap
+         (seção do hero, lá em cima) — as duas molduras da página são a
+         mesma moldura, então mexer em uma mexe na outra */
     }
     .about-video-wrap video {
       position:absolute; inset:0;
@@ -1524,8 +1989,12 @@
     /* ── tela cheia ──────────────────────────────────────────────── */
     .about-video-wrap:fullscreen {
       aspect-ratio:auto; width:100%; height:100%;
-      border-radius:0; border:none;
+      /* box-shadow junto: a moldura de vidro compartilhada com o hero
+         desenha a borda com sombra, não só com border */
+      border-radius:0; border:none; box-shadow:none;
     }
+    .about-video-wrap:fullscreen::before,
+    .about-video-wrap:fullscreen::after { display:none; }
     .about-video-wrap:fullscreen video { object-fit:contain; }
 
     @media (max-width:560px) {
@@ -1848,7 +2317,10 @@
     .logo-mark { flex-shrink:0; }
 
         /* ── @medias ────────────────────────────────────── */
-    @media (max-width: 700px) {
+    /* mesmo corte do .hide-mobile lá em cima (1053 = 1054 - 1): este
+       bloco é o que garante a nav compacta mesmo se algum estilo mais
+       específico tentar reexibir os itens. */
+    @media (max-width: 1053px) {
   .nav-links,
   #navLoginBtn,
   .nav-actions .btn-green {
@@ -2247,8 +2719,44 @@ html.theme-dark .hamburger {
       <!-- right -->
       <div class="hero-card" style="margin-top:2rem;" data-reveal="right">
         <div class="hero-img-wrap">
-          <img class="hero-img" src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=520&fit=crop&auto=format" alt="Equipe em treinamento" loading="lazy"/>
+          <div class="hero-chart">
+            <svg class="hero-chart__plot" viewBox="0 0 560 340" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <defs>
+                <linearGradient id="heroChartFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop class="hero-chart__stop-a" offset="0"/>
+                  <stop class="hero-chart__stop-b" offset=".62"/>
+                  <stop class="hero-chart__stop-c" offset="1"/>
+                </linearGradient>
+                <!-- a cortina que revela o gráfico da esquerda pra direita -->
+                <clipPath id="heroChartWipe">
+                  <rect class="hero-chart__wipe" x="0" y="0" width="560" height="340"/>
+                </clipPath>
+              </defs>
+              <g class="hero-chart__grid">
+                <path d="M112 0V340M224 0V340M336 0V340M448 0V340" vector-effect="non-scaling-stroke"/>
+                <path d="M0 68H560M0 136H560M0 204H560M0 272H560" vector-effect="non-scaling-stroke"/>
+              </g>
+              <g clip-path="url(#heroChartWipe)">
+                <path class="hero-chart__area" d="M0 250 L4.8 252.5 L9.7 250 L14.5 253.2 L19.3 254.2 L24.1 249.6 L29 252.1 L33.8 252.3 L38.6 254 L43.4 251.8 L48.3 251.1 L53.1 251.1 L57.9 252.1 L62.8 253.4 L67.6 248.6 L72.4 248.9 L77.2 252.7 L82.1 248.7 L86.9 252.1 L91.7 248 L96.6 247.2 L101.4 246.4 L106.2 247.1 L111 247.9 L115.9 246.6 L120.7 250 L125.5 247.8 L130.3 245.1 L135.2 244.1 L140 242 L144.8 247.2 L149.7 245.2 L154.5 241.8 L159.3 241.4 L164.1 238.9 L169 240.5 L173.8 240.2 L178.6 239.6 L183.4 231.9 L188.3 237.6 L193.1 229.7 L197.9 231.4 L202.8 231.2 L207.6 227.9 L212.4 220.9 L217.2 223.7 L222.1 226.3 L226.9 220 L231.7 224.2 L236.6 245.8 L241.4 223.2 L246.2 216 L251 215.5 L255.9 220.6 L260.7 219 L265.5 217.2 L270.3 219.6 L275.2 216.3 L280 217.7 L284.8 212.4 L289.7 214.8 L294.5 205.9 L299.3 215 L304.1 203.3 L309 213 L313.8 200.9 L318.6 201.8 L323.4 208.7 L328.3 202.6 L333.1 200.6 L337.9 193.4 L342.8 197.8 L347.6 192.6 L352.4 187.9 L357.2 193.8 L362.1 191.3 L366.9 189.7 L371.7 214.6 L376.6 180.7 L381.4 177.2 L386.2 179.3 L391 180.3 L395.9 172.5 L400.7 171.2 L405.5 171.4 L410.3 176.4 L415.2 175.3 L420 170.7 L424.8 161.7 L429.7 157 L434.5 162 L439.3 147.5 L444.1 153.8 L449 143.8 L453.8 143.3 L458.6 136.6 L463.4 134.6 L468.3 125.9 L473.1 120.6 L477.9 121.8 L482.8 115.3 L487.6 117.4 L492.4 102.9 L497.2 112.4 L502.1 99.6 L506.9 91.4 L511.7 96.3 L516.6 94.2 L521.4 89.7 L526.2 86.1 L531 89.9 L535.9 82.3 L540.7 84.6 L545.5 79 L550.3 73 L555.2 78 L560 70 L560 340 L0 340 Z"/>
+                <path class="hero-chart__line" vector-effect="non-scaling-stroke" d="M0 250 L4.8 252.5 L9.7 250 L14.5 253.2 L19.3 254.2 L24.1 249.6 L29 252.1 L33.8 252.3 L38.6 254 L43.4 251.8 L48.3 251.1 L53.1 251.1 L57.9 252.1 L62.8 253.4 L67.6 248.6 L72.4 248.9 L77.2 252.7 L82.1 248.7 L86.9 252.1 L91.7 248 L96.6 247.2 L101.4 246.4 L106.2 247.1 L111 247.9 L115.9 246.6 L120.7 250 L125.5 247.8 L130.3 245.1 L135.2 244.1 L140 242 L144.8 247.2 L149.7 245.2 L154.5 241.8 L159.3 241.4 L164.1 238.9 L169 240.5 L173.8 240.2 L178.6 239.6 L183.4 231.9 L188.3 237.6 L193.1 229.7 L197.9 231.4 L202.8 231.2 L207.6 227.9 L212.4 220.9 L217.2 223.7 L222.1 226.3 L226.9 220 L231.7 224.2 L236.6 245.8 L241.4 223.2 L246.2 216 L251 215.5 L255.9 220.6 L260.7 219 L265.5 217.2 L270.3 219.6 L275.2 216.3 L280 217.7 L284.8 212.4 L289.7 214.8 L294.5 205.9 L299.3 215 L304.1 203.3 L309 213 L313.8 200.9 L318.6 201.8 L323.4 208.7 L328.3 202.6 L333.1 200.6 L337.9 193.4 L342.8 197.8 L347.6 192.6 L352.4 187.9 L357.2 193.8 L362.1 191.3 L366.9 189.7 L371.7 214.6 L376.6 180.7 L381.4 177.2 L386.2 179.3 L391 180.3 L395.9 172.5 L400.7 171.2 L405.5 171.4 L410.3 176.4 L415.2 175.3 L420 170.7 L424.8 161.7 L429.7 157 L434.5 162 L439.3 147.5 L444.1 153.8 L449 143.8 L453.8 143.3 L458.6 136.6 L463.4 134.6 L468.3 125.9 L473.1 120.6 L477.9 121.8 L482.8 115.3 L487.6 117.4 L492.4 102.9 L497.2 112.4 L502.1 99.6 L506.9 91.4 L511.7 96.3 L516.6 94.2 L521.4 89.7 L526.2 86.1 L531 89.9 L535.9 82.3 L540.7 84.6 L545.5 79 L550.3 73 L555.2 78 L560 70"/>
+              </g>
+            </svg>
+            <p class="hero-chart__caption">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12L12 4M6 4h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Evolução da equipe
+            </p>
+          </div>
+          <!-- decoração pura: é a faísca que orbita a borda. Fica DENTRO
+               do wrap porque a máscara que a recorta em anel usa a caixa
+               dele como referência. aria-hidden pra não virar um nó vazio
+               no leitor de tela. -->
+          <span class="edge-orbit" aria-hidden="true"></span>
         </div>
+        <!-- a ponta da linha fica FORA do .hero-img-wrap de propósito: lá
+             dentro o overflow:hidden do wrap cortaria ela ao meio, porque
+             a linha termina bem na beirada. Aqui ela aparece inteira, por
+             cima da moldura. -->
+        <span class="hero-chart__head" aria-hidden="true"></span>
         <!-- as pílulas traziam "94% taxa de conclusão média" e "+18 novos
              cursos este mês" — métricas de uso que não constam em nenhum
              documento e que o projeto (em prototipação) não teria como
@@ -2841,6 +3349,183 @@ html.theme-dark .hamburger {
     if (document.readyState !== 'loading') initScrollReveal()
   })()
 
+  /* ── seção corrente: acende o .section-eyebrow de quem está na tela ──
+     Um por vez. Entrou a seção nova, apaga a anterior.
+
+     O que é observado são as SEÇÕES, não os eyebrows. O eyebrow mora no
+     topo do bloco: ele sai da tela logo no começo da rolagem, com a
+     seção ainda ocupando a página inteira — observar ele apagaria o selo
+     justamente enquanto você lê a seção dele.
+
+     O corte é uma FAIXA FINA no meio da viewport, montada com rootMargin
+     negativo em cima e embaixo (-50% / -49% deixa 1% de altura, algo como
+     8px numa tela de 800). Como as seções se encostam sem vão, a que
+     cruza essa faixa é a que está ocupando a tela — é o mesmo raciocínio
+     de um scrollspy de menu.
+
+     Por que uma faixa e não uma linha (-50%/-50%): com altura zero a área
+     de interseção também é zero, e aí parte dos navegadores nunca marca
+     isIntersecting. 1% é o suficiente pra ter área e fino o bastante pra
+     a troca acontecer praticamente no mesmo pixel.
+
+     Nos ~8px em que a divisa entre duas seções está dentro da faixa, as
+     duas contam como visíveis. O desempate é a ordem do documento: vence
+     a de baixo, que é a que está entrando quando se rola pra frente. ── */
+  ;(function () {
+    const pairs = []
+    document.querySelectorAll('.section-eyebrow').forEach(el => {
+      const section = el.closest('section')
+      if (section) pairs.push({ el, section })
+    })
+    if (!pairs.length) return
+
+    if (!('IntersectionObserver' in window)) {
+      // sem observer não dá pra saber onde a pessoa está: acende todos,
+      // que é melhor do que deixar a página inteira apagada
+      pairs.forEach(p => p.el.classList.add('is-active'))
+      return
+    }
+
+    const crossing = new Set()
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) crossing.add(entry.target)
+        else crossing.delete(entry.target)
+      })
+
+      // pairs está na ordem do documento, então o último que cruza a
+      // faixa é o de baixo — o desempate descrito acima
+      let winner = null
+      pairs.forEach(p => { if (crossing.has(p.section)) winner = p.section })
+
+      pairs.forEach(p => p.el.classList.toggle('is-active', p.section === winner))
+    }, { rootMargin: '-50% 0px -49% 0px' })
+
+    pairs.forEach(p => io.observe(p.section))
+  })()
+
+  /* ── rolagem suave ─────────────────────────────────────────────────
+     Um animador só, dono da posição vertical da página, alimentado por
+     duas entradas: a roda do mouse e os links de âncora (nav e menu, que
+     chamam o window.lideraScrollTo publicado aqui embaixo). Ter os dois
+     no mesmo lugar é o que faz um único par de tokens no CSS governar a
+     velocidade do projeto inteiro — antes as âncoras usavam o
+     behavior:'smooth' nativo, cuja duração o navegador escolhe e não
+     expõe pra ninguém.
+
+     Como funciona: a roda não rola a página, ela move um ALVO. Um laço
+     de requestAnimationFrame persegue esse alvo comendo uma fração do
+     que falta a cada frame. Como a fração é sempre do que RESTA, a
+     rolagem começa rápida e desacelera sozinha no fim, sem precisar de
+     duração nem de curva declarada.
+
+     Três detalhes que não são óbvios:
+
+     · o smooth do CSS precisa sair da frente enquanto o laço roda. Com
+       scroll-behavior:smooth ligado, o navegador tenta suavizar CADA
+       scrollTo nosso — sessenta alvos por segundo, cada um perseguido
+       por conta própria — e o resultado é uma rolagem pastosa e atrasada.
+       Por isso o start() põe 'auto' e o stop() devolve pro CSS: fora do
+       laço, quem não passa por aqui (teclado, barra de rolagem) continua
+       ganhando o smooth nativo;
+
+     · a fração por frame é corrigida pelo tempo. Aplicar .12 por frame
+       cru faz a página rolar ao DOBRO da velocidade num monitor de 120Hz,
+       porque são o dobro de frames no mesmo segundo. O Math.pow converte
+       "12% por frame de 60Hz" na fração equivalente para o intervalo que
+       de fato passou;
+
+     · o alvo se ressincroniza sozinho quando a rolagem vem de fora (uma
+       tecla, a barra, um scrollIntoView). Sem isso, o primeiro giro de
+       roda depois de uma rolagem dessas puxaria a página de volta pro
+       último alvo que este módulo conhecia. ── */
+  ;(function () {
+    const root = document.documentElement
+
+    // quem pediu menos movimento fica com a rolagem nativa, e as âncoras
+    // caem no fallback de quem chama o lideraScrollTo
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const token = (name, fallback) => {
+      const v = parseFloat(getComputedStyle(root).getPropertyValue(name))
+      return Number.isFinite(v) ? v : fallback
+    }
+
+    const STEP = token('--scroll-step', 1)
+    const EASE = Math.min(Math.max(token('--scroll-ease', .12), .02), .9)
+
+    let target  = window.scrollY
+    let current = window.scrollY
+    let running = false
+    let last    = 0
+
+    const maxY  = () => Math.max(0, root.scrollHeight - window.innerHeight)
+    const clamp = y => Math.min(Math.max(y, 0), maxY())
+
+    function start () {
+      target = clamp(target)
+      if (running) return
+      running = true
+      last = performance.now()
+      root.style.scrollBehavior = 'auto'
+      requestAnimationFrame(tick)
+    }
+
+    function stop () {
+      running = false
+      root.style.scrollBehavior = ''
+    }
+
+    function tick (now) {
+      if (!running) return
+      // teto no dt: aba que volta do segundo plano acumularia um intervalo
+      // enorme e a página daria um salto em vez de continuar de onde parou
+      const dt = Math.min(now - last, 64)
+      last = now
+
+      current += (target - current) * (1 - Math.pow(1 - EASE, dt / (1000 / 60)))
+
+      if (Math.abs(target - current) < .5) {
+        current = target
+        window.scrollTo(0, current)
+        stop()
+        return
+      }
+      window.scrollTo(0, current)
+      requestAnimationFrame(tick)
+    }
+
+    /* ── entrada 1: a roda ── */
+    window.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) return                                   // é zoom, não rolagem
+      if (document.body.style.overflow === 'hidden') return    // menu/modal travou a página
+      // rede de segurança: regiões que rolam por conta própria
+      if (e.target.closest && e.target.closest('.menu-panel, .modal-box')) return
+
+      // deltaMode 1 vem em linhas e 2 em páginas — alguns mouses e o
+      // Firefox usam essas unidades, e sem converter o passo sai errado
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1
+
+      e.preventDefault()
+      target = clamp(target + e.deltaY * unit * STEP)
+      start()
+    }, { passive: false })
+
+    /* ── entrada 2: âncoras e qualquer rolagem programática ── */
+    window.lideraScrollTo = function (y) {
+      target = clamp(y)
+      start()
+    }
+
+    /* ── ressincroniza quando a rolagem não veio daqui ── */
+    window.addEventListener('scroll', () => {
+      if (!running) { current = target = window.scrollY }
+    }, { passive: true })
+
+    window.addEventListener('resize', () => { target = clamp(target) }, { passive: true })
+  })()
+
   /* ── partículas do menu (canvas puro, sem libs externas) ──────────── */
   const menuParticles = (function () {
     const canvas = document.getElementById('menuParticlesCanvas')
@@ -3046,8 +3731,11 @@ html.theme-dark .hamburger {
 
       setTimeout(() => {
         const navHeight = document.querySelector('.nav').offsetHeight
-        const y = target.getBoundingClientRect().top + window.scrollY - navHeight - NAV_GAP
-        window.scrollTo({ top: Math.max(y, 0), behavior: 'smooth' })
+        const y = Math.max(target.getBoundingClientRect().top + window.scrollY - navHeight - NAV_GAP, 0)
+        // pelo animador, pra âncora e roda andarem na mesma velocidade;
+        // o fallback cobre quem pediu menos movimento (lá o módulo nem sobe)
+        if (window.lideraScrollTo) window.lideraScrollTo(y)
+        else window.scrollTo({ top: y, behavior: 'smooth' })
       }, 60)
     })
   })
@@ -3606,8 +4294,30 @@ html.theme-dark .hamburger {
     requestAnimationFrame(tick)
   })()
 
-  /* ── pulse levinho no player, disparado logo após o surgimento
-     (data-reveal) do bloco do vídeo, com um pequeno delay extra ── */
+  /* ── pulse do player (brilho verde + traço na borda), disparado logo
+     depois do surgimento (data-reveal) do bloco do vídeo ───────────────
+
+     O gatilho aqui era um transitionend no frame, esperando o surgimento
+     acabar. Não funcionava, e o sintoma era enganoso: rolando a página o
+     pulse nunca aparecia, mas dando F5 em cima do vídeo aparecia.
+
+     transitionend BORBULHA. O ouvinte estava no frame, mas quem dispara
+     não precisa ser o frame — serve qualquer descendente que transicione
+     'transform'. E existe um que faz isso logo na carga: o renderVolume()
+     põe .is-muted no botão de volume (o <video> nasce muted), o que faz o
+     par de ícones vol-on/vol-off trocar de scale, com a transition de
+     .25s que todo ícone de controle tem. Isso sobe até aqui ~250ms depois
+     da página carregar, o handler aceita — só filtrava propertyName — se
+     remove, e o pulse dispara ali, com o vídeo ainda lá embaixo, fora da
+     tela. Quando você finalmente rolava até ele, já tinha acabado. No F5
+     em cima do vídeo o roubo acontece igual, só que aí o bloco está na
+     tela, então dá pra ver — daí a diferença entre os dois casos.
+
+     A correção troca o evento pela CAUSA: o que interessa é o instante em
+     que o surgimento começa, e isso é a classe .in-view entrando no frame.
+     Um MutationObserver no atributo class avisa exatamente nesse momento,
+     e nada mais no documento pode falsificar isso. Do começo do surgimento
+     até o pulse é tempo fixo: a duração da transition mais um respiro. ── */
   ;(function () {
     const frame = document.getElementById('aboutVideoFrame')
     if (!frame) return
@@ -3615,31 +4325,39 @@ html.theme-dark .hamburger {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReducedMotion) return
 
-    const PULSE_DELAY = 300 // ms de respiro depois que o surgimento termina
+    const REVEAL_MS  = 800 // duração da transition de [data-reveal]
+    const PULSE_WAIT = 300 // respiro depois que o surgimento termina
 
-    // a classe vai no FRAME (e não mais no .about-video-wrap): quem
-    // anima agora é o ::after do frame, a camada de brilho verde
+    // a classe vai no FRAME (e não no .about-video-wrap): quem anima é o
+    // ::after do frame (brilho) e o ::after do wrap (traço na borda)
     function triggerPulse() {
-      setTimeout(() => frame.classList.add('video-pulse'), PULSE_DELAY)
+      setTimeout(() => {
+        // tira e força um reflow antes de repor: sem isso, chamar de novo
+        // com a classe ainda pendurada não reinicia animação nenhuma
+        frame.classList.remove('video-pulse')
+        void frame.offsetWidth
+        frame.classList.add('video-pulse')
+      }, REVEAL_MS + PULSE_WAIT)
     }
 
-    // remove a classe ao final da animação, pra poder disparar de novo
-    // se algum dia o elemento voltar a ficar fora da viewport e reentrar.
-    // animationend do ::after borbulha com target = o próprio frame.
+    // solta a classe no fim, pra poder disparar de novo. O animationend do
+    // ::after borbulha com target = o próprio frame; o filtro por nome
+    // ignora o edgeSweep do traço, que é mais curto e termina antes.
     frame.addEventListener('animationend', (e) => {
       if (e.animationName === 'video-glow-pulse') frame.classList.remove('video-pulse')
     })
 
     if (frame.classList.contains('in-view')) {
-      // já revelado (ex.: reduced motion aplicado no reveal, ou
-      // elemento já estava visível no load) — dispara direto
+      // já revelado — sem observer no navegador, ou o reveal rodou antes
+      // deste bloco por algum motivo
       triggerPulse()
-    } else {
-      frame.addEventListener('transitionend', function handler(e) {
-        if (e.propertyName !== 'transform') return
-        frame.removeEventListener('transitionend', handler)
+    } else if ('MutationObserver' in window) {
+      const mo = new MutationObserver(() => {
+        if (!frame.classList.contains('in-view')) return
+        mo.disconnect()
         triggerPulse()
       })
+      mo.observe(frame, { attributes: true, attributeFilter: ['class'] })
     }
   })()
 
