@@ -818,6 +818,106 @@
       display:flex; align-items:center; justify-content:center;
     }
 
+    /* ── tópicos do hero — SÓ NO DESKTOP ─────────────────────────────
+       Existem pra fechar a altura do hero nas telas largas, onde sobrava
+       espaço embaixo e a seção seguinte espiava por baixo da dobra.
+
+       O corte é 1054px, o mesmo da nav cheia, e não os 769px em que a
+       grid vira duas colunas: entre um e outro a coluna esquerda é
+       estreita demais, cada tópico quebraria em duas linhas e o bloco
+       viraria um paredão de texto empurrando o gráfico pra baixo — o
+       oposto do problema que ele veio resolver.
+
+       A linguagem é a da .about-list (mesmo recuo negativo, mesmo tinte
+       verde no hover, mesmo selo redondo com stagger por --i), porque é
+       a forma que a página já usa pra listar pontos. O que muda é o
+       ícone: chevron em vez de check, pra não parecer a mesma lista
+       repetida em dois lugares.
+
+       Nada aqui é conteúdo exclusivo — tudo reaparece, com mais espaço,
+       na seção Plataforma. Por isso esconder no celular não tira
+       informação de ninguém.
+
+       O gate é a .hero-desk, e não um seletor por elemento, porque hoje
+       são dois blocos (um parágrafo e esta lista) e amanhã pode ser mais
+       um. Ele mora aqui junto da lista pra os dois estarem à vista um do
+       outro — quem mudar o corte precisa mudar nos dois. */
+    .hero-desk { display:none; }
+
+    @media (min-width:1054px) {
+      .hero-desk { display:block; }
+      ul.hero-desk {
+        display:flex; flex-direction:column; gap:.1rem;
+      }
+    }
+
+    .hero-points {
+      max-width:30rem;
+      margin:-.35rem 0 1.85rem;
+    }
+
+    /* O item lê como um NÓ FILHO do parágrafo acima, no formato de árvore
+       de diretório: recuado, com o galho ↳ na frente, em monoespaçada.
+
+       O recuo (1.35rem) é o que faz a leitura funcionar — sem ele o galho
+       vira só um marcador de lista qualquer. Ele entra por margin-left no
+       li, e não por padding no ul, pra o galho ficar ALINHADO à primeira
+       letra do parágrafo de cima em vez de sangrar pra fora dela.
+
+       O ↳ é um caractere de verdade (U+21B3), não um ícone: era o pedido,
+       e é o que dá o ar de terminal. A pilha monoespaçada é deliberada —
+       a Poppins da página não tem esse glifo, então o navegador cairia num
+       fallback qualquer; declarando a stack, a escolha é nossa e o
+       resultado é o mesmo em toda máquina. */
+    .hero-points li {
+      --branch-delay: calc(650ms + var(--i, 0) * 140ms);
+      display:flex; align-items:flex-start; gap:.5rem;
+      padding:.4rem .7rem .4rem .55rem;
+      margin-left:1.35rem;
+      border:1.5px solid transparent;
+      border-radius:10px;
+      font-size:.85rem; line-height:1.55; color:var(--ink);
+      transition:transform .35s cubic-bezier(.16,1,.3,1), background-color .35s ease,
+                 border-color .35s ease;
+    }
+    .hero-points li:hover {
+      transform:translateX(5px);
+      background:rgba(47,213,90,.07);
+      border-color:rgba(47,213,90,.28);
+    }
+
+    .hero-point-arrow {
+      flex-shrink:0;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size:.95rem; line-height:1.35;
+      color:var(--green);
+      opacity:.85;
+      transition:opacity .3s ease;
+    }
+    .hero-points li:hover .hero-point-arrow { opacity:1; }
+
+    /* o galho desce e encaixa, como quem abre a subpasta. É por isso que
+       o translate parte de cima E da esquerda: o movimento desenha o
+       próprio caminho do ↳ antes de assentar.
+
+       O atraso de base (650ms) é pra cair no fim do surgimento e não antes
+       dele: o bloco leva os 800ms da transition de [data-reveal] mais o
+       escalonamento que o grupo hero-left dá a ele, e um galho que aparece
+       durante a opacidade zero do pai não é visto por ninguém. */
+    .hero-points.in-view li .hero-point-arrow {
+      animation:heroBranchDrop .45s cubic-bezier(.34,1.56,.64,1) var(--branch-delay) both;
+    }
+    @keyframes heroBranchDrop {
+      from { opacity:0;   transform:translate(-5px,-6px); }
+      to   { opacity:.85; transform:none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-point-arrow,
+      .hero-points.in-view li .hero-point-arrow { animation:none; opacity:.85; transform:none; }
+      .hero-points li:hover { transform:none; }
+    }
+
     /* hero image card */
     .hero-card {
       position:relative;
@@ -1177,17 +1277,28 @@
     }
     .hero-pill-2 {
       top:-16px; right:24px; padding:.75rem 1.125rem;
-      /* navy cheio, e de propósito. O tinte translúcido que ela teve por
-         um tempo fazia sentido quando o fundo era uma FOTO: dava pra ver
-         algo atravessando o vidro. Agora atrás dela tem o painel escuro
-         do gráfico, então o tinte só escurecia mais o que já era escuro e
-         a pílula se dissolvia no painel. Cheia, ela volta a ser um bloco
-         de cor — o único ponto de navy vivo nesse canto. É também o que
-         a separa da pill-1, que é vidro de verdade. */
-      background:linear-gradient(rgba(15,18,114,.82), rgba(15,18,114,.82));
-      border-color:rgba(255,255,255,.14);
+      /* vidro verde. O tinte é um verde-menta claro, mas fica em ALPHA
+         BAIXO de propósito: o que atravessa continua sendo o painel
+         escuro do gráfico, e é isso que segura o texto branco em cima.
+         Um verde claro cheio viraria uma etiqueta pastel e o "IA" — que
+         é o que a pílula existe pra dizer — sumiria dentro dela.
+
+         Por que aqui o vidro funciona e antes não: quando ela era navy
+         translúcida, o tinte escuro empilhava escuro sobre escuro e a
+         pílula se dissolvia no painel. Verde sobre navy é troca de MATIZ,
+         não de luminosidade — ela se separa do fundo pela cor, e não por
+         ser mais clara, então dá pra ser translúcida e destacada ao mesmo
+         tempo. Os dois stops (menta em cima, verde do projeto embaixo)
+         dão a impressão de espessura que vidro tem.
+
+         Valores fixos, sem token de tema: o painel atrás dela é escuro
+         nos dois temas, então o que ela precisa contrastar não muda.
+         Mesma razão da .hero-pill logo acima. */
+      background:linear-gradient(rgba(122,255,172,.34), rgba(47,213,90,.23));
+      border-color:rgba(168,255,202,.55);
       box-shadow:0 8px 32px var(--shadow-lift),
-                 inset 0 1px 0 rgba(255,255,255,.18);
+                 0 0 30px -8px rgba(47,213,90,.6),
+                 inset 0 1px 0 rgba(216,255,230,.5);
       animation:pillFloat 9s ease-in-out infinite reverse;
     }
     @keyframes pillFloat {
@@ -1201,7 +1312,9 @@
     .pill-val  { font-size:1.8rem; font-weight:800; color:var(--green); line-height:1; }
     .pill-val2 { font-size:1.4rem; font-weight:800; color:#fff; line-height:1; }
     .pill-lbl  { font-size:.7rem; color:rgba(255,255,255,.72); margin-top:2px; }
-    .pill-lbl2 { font-size:.65rem; color:rgba(255,255,255,.6); margin-bottom:2px; }
+    /* o rótulo subiu de .6 pra .74 e ganhou um fio de menta: sobre o
+       vidro verde, branco puro a .6 ficava acinzentado e apagado */
+    .pill-lbl2 { font-size:.65rem; color:rgba(228,255,238,.74); margin-bottom:2px; }
 
     /* stats bar
        A MOLDURA (borda + o fundo cinza que aparece nos gaps de 1px)
@@ -2704,6 +2817,28 @@ html.theme-dark .hamburger {
         <div class="hero-badge" data-reveal data-reveal-group="hero-left"><span class="badge-dot"></span>Plataforma de T&D Corporativo</div>
         <h1 class="hero-title" data-reveal data-reveal-group="hero-left">Treine equipes.<br>Forme <span class="accent">líderes.</span></h1>
         <p class="hero-body" data-reveal data-reveal-group="hero-left">Mais de 20 módulos em áreas estratégicas, <mark class="ink">trilhas personalizadas por cargo</mark> e relatórios completos para gestores.</p>
+        <!-- ESTE PARÁGRAFO E A LISTA ABAIXO SÓ APARECEM NO DESKTOP
+             (>=1054px) — o gate é a classe .hero-desk, no CSS do hero.
+             Existem pra fechar a altura do bloco nas telas largas, onde
+             sobrava espaço e a seção seguinte espiava por baixo da dobra.
+
+             CONTEÚDO PROVISÓRIO, raso de propósito: sai do que a própria
+             página já afirma — a IA como diferencial (seção Plataforma), a
+             assinatura única por empresa (pílula do gráfico e seção Planos)
+             e o certificado por módulo (barra de números logo abaixo). Vai
+             ser reescrito quando a documentação do projeto entrar. Nenhum
+             número novo foi inventado aqui, que é a régua do resto do hero,
+             e vale manter na substituição. -->
+        <p class="hero-body hero-desk" data-reveal data-reveal-group="hero-left">Do operacional à liderança: a IA recomenda os próximos módulos a partir dos indicadores de cada colaborador e aponta <mark class="ink">potenciais líderes</mark> dentro do próprio time. Uma assinatura cobre a empresa inteira, com perfil e histórico separados por pessoa.</p>
+        <ul class="hero-points hero-desk" data-reveal data-reveal-group="hero-left">
+          <li style="--i:0">
+            <!-- ↳ (U+21B3): o galho da árvore. aria-hidden porque é
+                 desenho, não conteúdo — leitor de tela leria "seta pra
+                 baixo e direita" antes de cada linha, sem ganho nenhum. -->
+            <span class="hero-point-arrow" aria-hidden="true">↳</span>
+            <span>Avaliação e certificado ao fim de cada módulo</span>
+          </li>
+        </ul>
         <div class="hero-ctas" data-reveal data-reveal-group="hero-left">
           <button class="btn-green" onclick="window.location='#'">
             Agendar demonstração
