@@ -116,7 +116,44 @@
     .hide-mobile { display:none; }
     @media(min-width:769px){ .hide-mobile{ display:flex; } }
 
-    .circle { position:absolute; border-radius:50%; pointer-events:none; }
+    /* ── bolinhas decorativas do fundo ────────────────────
+       Antes eram 100% estáticas. Agora cada uma deriva no seu próprio
+       caminho (três variantes com durações que não fecham ciclo juntas,
+       pra nunca sincronizarem) e ainda ganha profundidade no scroll.
+
+       O scroll escreve a propriedade `translate`, e não `transform`:
+       são propriedades DIFERENTES, então o parallax do JS e a animação
+       de deriva daqui se compõem em vez de uma sobrescrever a outra —
+       que é o que aconteceria se as duas disputassem `transform`. */
+    .circle {
+      position:absolute;
+      border-radius:50%;
+      pointer-events:none;
+      will-change:transform;
+      animation:circleDriftA 26s ease-in-out infinite;
+    }
+    .circle.drift-b { animation-name:circleDriftB; animation-duration:33s; }
+    .circle.drift-c { animation-name:circleDriftC; animation-duration:41s; }
+
+    @keyframes circleDriftA {
+      0%, 100% { transform:translate(0,0)        scale(1);    }
+      33%      { transform:translate(20px,-24px) scale(1.07); }
+      66%      { transform:translate(-15px,13px) scale(.95);  }
+    }
+    @keyframes circleDriftB {
+      0%, 100% { transform:translate(0,0)        scale(1);    }
+      40%      { transform:translate(-26px,18px) scale(1.09); }
+      70%      { transform:translate(13px,-20px) scale(.93);  }
+    }
+    @keyframes circleDriftC {
+      0%, 100% { transform:translate(0,0)        scale(1);    }
+      25%      { transform:translate(16px,22px)  scale(.94);  }
+      60%      { transform:translate(-22px,-15px) scale(1.08); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .circle { animation:none; translate:none !important; }
+    }
 
     /* ── buttons ────────────────────────────────────── */
     .btn-green {
@@ -1338,6 +1375,64 @@
 
     window.addEventListener('scroll', clearMarks, true)
     window.addEventListener('resize', clearMarks)
+  })()
+</script>
+
+<script>
+  /* ── bolinhas do fundo: variação + profundidade no scroll ─────────
+     Mesma peça do index.html. A deriva em si é CSS (@keyframes
+     circleDrift*). Aqui só fazemos duas coisas:
+
+     1) espalhar as variantes e dar um atraso NEGATIVO a cada bolinha,
+        pra cada uma já entrar no meio do próprio ciclo — sem isso, as
+        bolinhas começariam todas na mesma pose e o fundo "pulsaria"
+        junto, entregando o truque;
+     2) parallax no scroll: quanto maior a bolinha, mais devagar ela
+        anda em relação à página (profundidade). Escreve `translate`,
+        que compõe com o `transform` da animação em vez de brigar. */
+  ;(function () {
+    const circles = Array.from(document.querySelectorAll('.circle'))
+    if (!circles.length) return
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    circles.forEach((c, i) => {
+      if (i % 3 === 1) c.classList.add('drift-b')
+      if (i % 3 === 2) c.classList.add('drift-c')
+      // atraso negativo = já começa adiantado no ciclo
+      c.style.animationDelay = `-${(i * 3.7) % 26}s`
+    })
+
+    if (prefersReducedMotion) return
+
+    // profundidade pela área: bolinha grande = fundo = anda menos.
+    // aqui várias bolinhas são dimensionadas por CSS (e não por style
+    // inline como no index), então o offsetWidth entra como fallback
+    const layers = circles.map(c => {
+      const size = parseFloat(c.style.width) || c.offsetWidth || 100
+      const section = c.parentElement
+      // 18px pras miúdas (primeiro plano), ~6px pras enormes (fundo)
+      const depth = Math.max(6, 26 - size / 24)
+      return { el: c, section, depth }
+    })
+
+    let raf = null
+    function update() {
+      raf = null
+      const vh = window.innerHeight
+      layers.forEach(({ el, section, depth }) => {
+        const r = section.getBoundingClientRect()
+        if (r.bottom < -200 || r.top > vh + 200) return // fora de vista: nem calcula
+        // progress: 0 quando a seção entra por baixo, 1 quando sai por cima
+        const progress = (vh - r.top) / (vh + r.height)
+        el.style.translate = `0 ${(progress - 0.5) * 2 * depth}px`
+      })
+    }
+    function onScroll() { if (!raf) raf = requestAnimationFrame(update) }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    update()
   })()
 </script>
 <script src="themeSwitch.js"></script>
