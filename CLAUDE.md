@@ -16,6 +16,7 @@ sem dependências**: HTML + CSS + JS vanilla. Abre direto no navegador — não 
 | `perfil.html` | Perfil estilo rede social — capa, badges, skills, experiência, feed |
 | `themeSwitch.js` | Bolinha flutuante claro/escuro. Injeta o próprio CSS, salva em `localStorage` |
 | `Headerscroll.js` | **Só no `index`/`lidera360`** — header que vira bolinha ao rolar, + scroll suave e link ativo |
+| `introLoader.js` | **Só no `index`/`lidera360`** — tela de intro (contador até 360 + DarkVeil em WebGL), uma vez por sessão |
 | `src/img/` | Logos, avatar e o vídeo institucional (`sobre-nos.mp4`) |
 
 Navegação: `index` → login (fake) → `lidera360.html` → menu lateral → `dash.html`
@@ -107,12 +108,51 @@ com `;(function () { ... })()`. Sem ponto e vírgula no fim das linhas.
 
 6. **Camada de z-index** (do `index`): conteúdo `1`, marca-texto `5`, nav `40`,
    botão de tema `41`, barra de progresso `42`, backdrop do menu `45`, painel `46`,
-   modal de login `50`. No `dash.html` a camada do marca-texto sobe para `60`, para
-   ficar acima do modal de módulo.
+   modal de login `50`, tela de intro `100`. No `dash.html` a camada do marca-texto
+   sobe para `60`, para ficar acima do modal de módulo.
 
 7. **Vídeo bruto fora do repositório.** O `.gitignore` exclui `*.MOV`/`*.mov` etc.:
    o original tinha 267 MB e o GitHub rejeita acima de 100 MiB. Só a versão
    convertida em `src/img/` é versionada.
+
+8. **A intro roda uma vez por SESSÃO**, e a decisão mora num script inline no topo
+   do `<body>` — não no `introLoader.js`. Ela precisa acontecer antes da primeira
+   pintura: se dependesse do arquivo externo, quem já viu a intro veria um lampejo
+   dela a cada F5. A chave é `lidera360:intro-seen` no `sessionStorage`, que
+   sobrevive ao refresh e morre ao fechar a aba — exatamente a regra pedida. Para
+   ver de novo sem fechar a aba, apague a chave no DevTools (Application → Session
+   Storage). A marcação é feita na ENTRADA da animação, não na saída, senão
+   recarregar no meio dela faria tudo recomeçar.
+
+9. **As animações de entrada da página esperam a intro.** O scroll reveal e o
+   marca-texto passam pelo `window.lideraOnIntroDone` em vez de arrancarem
+   sozinhos — sem isso o hero faz todo o número dele (typewriter, reveals, traçado
+   do gráfico) escondido atrás do véu, e a página aparece já parada. Quem esvazia
+   a fila é o `introLoader.js`, no COMEÇO do fade, pra uma coisa encadear na outra.
+   Sem intro (refresh, movimento reduzido) a função executa na hora.
+
+10. **O DarkVeil e o Counter da intro vieram do react-bits sem React.** O DarkVeil
+    é um fragment shader — a `ogl` do componente original só criava contexto e
+    desenhava um triângulo de tela cheia, o que aqui são ~50 linhas de WebGL cru;
+    o shader está copiado sem alteração. O Counter é um odômetro cuja única peça
+    de React era a mola do deslize, trocada por `rAF` com easing. Nenhum dos dois
+    justificava trazer npm e bundler — e uma tela de LOADING não pode depender de
+    baixar dependência. O shader ganhou um DUOTONE no fim do `main()` (`uTint`/`uSat`
+    sobre a rampa `uDeep`→`uGlow`): sozinho, o `hueShift` levava o roxo do CPPN
+    pro verde neon, longe do `#2fd55a`. Os botões de ajuste (tempos, `HUE_SHIFT`,
+    `TINT`, `SAT`, `DEEP`, `GLOW`, `RES_SCALE`)
+    estão no topo do `introLoader.js`.
+
+11. **O vidro da intro é FUMÊ, e isso é deliberado.** A primeira versão era um
+    vidro claro (fill branco, `brightness()` clareando o backdrop, borda em
+    gradiente, reflexo diagonal em laço). Ficou um cartão claro cheio de efeito
+    sobre um fundo todo escuro. O visual atual saiu de um acidente: um print do
+    Dark Reader tentando escurecer uma página que já era escura achatou justamente
+    os efeitos, e o que sobrou era melhor. Então: fill verde-navy quase preto,
+    `brightness(.85)` (escurece, não clareia), `border` estático de 1px e nenhum
+    reflexo se mexendo. Antes de "melhorar" isso com um anel em gradiente, leia o
+    comentário do `.intro-panel`: o anel desenha uma fonte de luz, e este painel
+    não tem uma — ele é iluminado por dentro, pelo verde do véu que atravessa.
 
 ## Conteúdo
 

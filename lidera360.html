@@ -1422,6 +1422,262 @@
     .stat-val  { font-size:clamp(1.4rem,3vw,2rem); font-weight:800; color:var(--green); line-height:1; }
     .stat-lbl  { font-size:.72rem; color:var(--muted); margin-top:4px; }
 
+    /* ── BorderGlow: o brilho que acende na borda mais próxima do cursor ──
+       Porte do componente BorderGlow do react-bits (reactbits.dev) para
+       vanilla. Nada ali precisava de React: as props eram só custom
+       properties estáticas — viraram os tokens logo abaixo, já na paleta
+       do projeto — e o único trabalho de runtime era escrever
+       --edge-proximity e --cursor-angle no mousemove, que é exatamente o
+       que o initTiltHover já faz com --mx/--my.
+
+       Duas camadas empilhadas, as duas recortadas por um conic-gradient
+       que gira junto com o cursor (--cursor-angle) e as duas com a
+       opacidade amarrada a quão perto da beirada o cursor está
+       (--edge-proximity: 0 no centro, 100 encostando na borda):
+
+       · ::before — o FIO da borda, pintado com um mesh de sete radiais.
+         O truque do "só a borda" é o par padding-box / border-box: o
+         primeiro gradiente, na cor do fundo, tampa o miolo pela
+         padding-box e sobra só o anel de 1px da border-box;
+       · .edge-light — o brilho que vaza PRA FORA da caixa (inset negativo
+         de --glow-padding), desenhado com uma pilha de box-shadows.
+
+       A camada de PREENCHIMENTO do original (::after) voltou, e com uma
+       função nova: é ela que faz os SEPARADORES da grade acenderem. O
+       porquê está no comentário da própria regra, mais abaixo.
+
+       Também ficou de fora o `transform: translate3d(0,0,.01px)` que o
+       original põe no card: aqui o wrapper é quem carrega o [data-reveal],
+       e as duas regras disputariam a MESMA propriedade `transform` com a
+       mesma especificidade — o card ficaria plantado na tela em vez de
+       subir. O contexto de empilhamento que o translate3d garantia já vem
+       do isolation:isolate abaixo. */
+    .glow-frame {
+      /* escritos pelo JS a cada mousemove (ver o fim do body) */
+      --edge-proximity: 0;
+      --cursor-angle: 45deg;
+      /* posição crua do cursor dentro da caixa — é ela que ancora a
+         máscara do ::after, a camada que acende as frestas da grade.
+         O 50%/50% é só o repouso antes do primeiro mousemove: até lá
+         nada pinta, porque --edge-proximity ainda é 0. */
+      --mx: 50%;
+      --my: 50%;
+      /* de quantos % de proximidade da borda pra cima o efeito aparece.
+         Mais alto = só acende bem colado na beirada. O do fio fica 20
+         pontos acima do brilho: a luz externa chega primeiro, a cor depois. */
+      --edge-sensitivity: 30;
+      --color-sensitivity: calc(var(--edge-sensitivity) + 20);
+      /* abertura do cone que recorta as camadas — quanto do perímetro
+         acende em volta do ponto mais próximo do cursor */
+      --cone-spread: 25;
+      /* o quanto o brilho externo vaza pra fora da caixa. Cabe nos 6rem
+         de padding inferior do .hero e nos 2.5rem do .wrap; mexeu aqui,
+         confira se não encosta no overflow:hidden da seção. */
+      --glow-padding: 40px;
+
+      /* verde da marca, um tom acima pra ler como LUZ e não como tinta */
+      --glow-hsl: 136deg 72% 58%;
+      /* o mesh do fio: os dois verdes do projeto (o mesmo par da
+         .scroll-progress) mais o laranja, a terceira cor da paleta */
+      --mesh-a: #2fd55a;
+      --mesh-b: #7ef0a0;
+      --mesh-c: #f97316;
+
+      position: relative;
+      isolation: isolate;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--white);
+      box-shadow: 0 16px 44px -28px var(--shadow-lift);
+      margin-top: 4rem;
+    }
+    html.theme-dark .glow-frame { --glow-hsl: 136deg 85% 66%; }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .glow-frame { --glow-hsl: 136deg 85% 66%; }
+    }
+
+    /* a .stats-bar entrega a moldura pro wrapper: a borda de 2px dela sairia
+       por cima do fio do mesh e o esconderia. As linhas internas da grade
+       NÃO vêm dessa borda (vêm do gap:1px sobre o background), então elas
+       continuam ali. O z-index é o que mantém as células ACIMA do
+       .edge-light, que também é z-index:1 e vem antes no documento. */
+    .glow-frame > .stats-bar {
+      position: relative;
+      z-index: 1;
+      margin-top: 0;
+      border: none;
+      border-radius: inherit;
+    }
+
+    .glow-frame::before,
+    .glow-frame::after,
+    .glow-frame > .edge-light {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      transition: opacity .25s ease-out;
+      z-index: -1;
+    }
+    /* saindo do card as camadas se apagam mais devagar do que acenderam */
+    .glow-frame:not(:hover)::before,
+    .glow-frame:not(:hover)::after,
+    .glow-frame:not(:hover) > .edge-light {
+      opacity: 0;
+      transition: opacity .75s ease-in-out;
+    }
+
+    /* ── o fio da borda ── */
+    .glow-frame::before {
+      border: 1px solid transparent;
+      background:
+        linear-gradient(var(--white) 0 100%) padding-box,
+        radial-gradient(at 80% 55%, var(--mesh-a) 0px, transparent 50%) border-box,
+        radial-gradient(at 69% 34%, var(--mesh-b) 0px, transparent 50%) border-box,
+        radial-gradient(at 8%  6%,  var(--mesh-c) 0px, transparent 50%) border-box,
+        radial-gradient(at 41% 38%, var(--mesh-a) 0px, transparent 50%) border-box,
+        radial-gradient(at 86% 85%, var(--mesh-b) 0px, transparent 50%) border-box,
+        radial-gradient(at 82% 18%, var(--mesh-c) 0px, transparent 50%) border-box,
+        radial-gradient(at 51% 4%,  var(--mesh-b) 0px, transparent 50%) border-box,
+        linear-gradient(var(--mesh-a) 0 100%) border-box;
+      opacity: calc((var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+      -webkit-mask-image:
+        conic-gradient(from var(--cursor-angle) at center,
+          black calc(var(--cone-spread) * 1%),
+          transparent calc((var(--cone-spread) + 15) * 1%),
+          transparent calc((100 - var(--cone-spread) - 15) * 1%),
+          black calc((100 - var(--cone-spread)) * 1%));
+      mask-image:
+        conic-gradient(from var(--cursor-angle) at center,
+          black calc(var(--cone-spread) * 1%),
+          transparent calc((var(--cone-spread) + 15) * 1%),
+          transparent calc((100 - var(--cone-spread) - 15) * 1%),
+          black calc((100 - var(--cone-spread)) * 1%));
+    }
+
+
+    /* ── o mesh no MIOLO: é ele que faz os separadores acenderem ──────
+       As linhas entre as células não são bordas — são o `background:
+       var(--border)` da própria .stats-bar aparecendo pelos gaps de 1px
+       da grade, com as .stat-cell (opacas) tampando todo o resto. E
+       --border é um rgba de 14%: essas frestas JÁ eram translúcidas.
+
+       Então não foi preciso mexer na grade. Basta pintar o mesh aqui,
+       numa camada z-index:-1 — acima do fundo do card e abaixo das
+       células: onde há célula ela desaparece atrás, e onde há fresta 86%
+       dela atravessa e a linha acende.
+
+       É o ::after do componente original de volta, mas com OUTRA máscara,
+       e essa diferença é o ponto todo desta regra.
+
+       O original recorta o fill com um conic `transparent 5%, black 15%,
+       black 85%, transparent 95%` a partir do --cursor-angle: isso deixa
+       transparente justamente a fatia QUE ESTÁ SOB O CURSOR e pinta todo
+       o resto da volta. Lá faz sentido — é um preenchimento difuso que
+       foge do ponteiro. Aqui era o avesso do que se quer: as frestas
+       perto do cursor eram as únicas que não acendiam. Junto disso vinha
+       uma elipse que esvazia o centro do card, e numa barra baixa e larga
+       como esta quase tudo é "centro" — as duas coisas somadas apagavam
+       a linha inteira.
+
+       A máscara agora é um círculo ANCORADO NO CURSOR (--mx/--my, escritos
+       pelo mesmo listener que já escreve os outros dois tokens — é o mesmo
+       par que o initTiltHover usa nos cards). A fresta acende no pedaço
+       que está debaixo do ponteiro e se apaga com a distância, que é o que
+       "o glow passar pelo separator" quer dizer na prática.
+
+       O portão continua sendo o --edge-proximity, senão isto viraria um
+       holofote solto no meio da barra em vez de um BorderGlow. Só que aqui
+       ele usa o --edge-sensitivity (30) e não o --color-sensitivity (50):
+       as frestas entram junto com o brilho de fora, não vinte pontos
+       depois dele. */
+    .glow-frame::after {
+      /* força do brilho nas frestas. Abaixo de ~.6 o traço se perde
+         atrás do véu de 14% do --border; 1 é o teto útil. */
+      --seam-opacity: 1;
+      /* raio do círculo que seleciona qual pedaço da fresta acende */
+      --seam-reach: 260px;
+      background:
+        radial-gradient(at 80% 55%, var(--mesh-a) 0px, transparent 50%) padding-box,
+        radial-gradient(at 69% 34%, var(--mesh-b) 0px, transparent 50%) padding-box,
+        radial-gradient(at 8%  6%,  var(--mesh-c) 0px, transparent 50%) padding-box,
+        radial-gradient(at 41% 38%, var(--mesh-a) 0px, transparent 50%) padding-box,
+        radial-gradient(at 86% 85%, var(--mesh-b) 0px, transparent 50%) padding-box,
+        radial-gradient(at 82% 18%, var(--mesh-c) 0px, transparent 50%) padding-box,
+        radial-gradient(at 51% 4%,  var(--mesh-b) 0px, transparent 50%) padding-box,
+        linear-gradient(var(--mesh-a) 0 100%) padding-box;
+      opacity: calc(var(--seam-opacity) * (var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
+      /* normal, e não o soft-light do original: 1px de linha visto
+         através de um véu de 14% não sobrevive a um blend sutil */
+      mix-blend-mode: normal;
+      /* uma máscara só — sem mask-composite, que é onde a versão anterior
+         empilhava dois recortes e um cancelava o outro */
+      -webkit-mask-image:
+        radial-gradient(circle var(--seam-reach) at var(--mx) var(--my),
+          black 0%, rgba(0,0,0,.55) 45%, transparent 100%);
+      mask-image:
+        radial-gradient(circle var(--seam-reach) at var(--mx) var(--my),
+          black 0%, rgba(0,0,0,.55) 45%, transparent 100%);
+    }
+
+    /* ── o brilho externo ── */
+    .glow-frame > .edge-light {
+      inset: calc(var(--glow-padding) * -1);
+      z-index: 1;
+      opacity: calc((var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
+      /* no ESCURO o plus-lighter é o que faz a luz somar e estourar. No
+         claro ele estoura pro branco e o brilho some contra o creme — por
+         isso lá o modo é normal (é o que o --light do original faz). */
+      mix-blend-mode: normal;
+      -webkit-mask-image:
+        conic-gradient(from var(--cursor-angle) at center,
+          black 2.5%, transparent 10%, transparent 90%, black 97.5%);
+      mask-image:
+        conic-gradient(from var(--cursor-angle) at center,
+          black 2.5%, transparent 10%, transparent 90%, black 97.5%);
+    }
+    html.theme-dark .glow-frame > .edge-light { mix-blend-mode: plus-lighter; }
+    @media (prefers-color-scheme: dark) {
+      html.theme-auto .glow-frame > .edge-light { mix-blend-mode: plus-lighter; }
+    }
+
+    /* o ::before aqui volta pra caixa do card (o pai está inflado pelo
+       inset negativo) e desenha a luz: as sombras com `inset` acendem por
+       dentro, as sem `inset` vazam pra fora. As de dentro só aparecem onde
+       o conteúdo é transparente — com as .stat-cell opacas, quem faz o
+       trabalho visível é a metade de fora. */
+    .glow-frame > .edge-light::before {
+      content: "";
+      position: absolute;
+      inset: var(--glow-padding);
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 0   1px hsl(var(--glow-hsl) / 100%),
+        inset 0 0 1px 0   hsl(var(--glow-hsl) / 60%),
+        inset 0 0 3px 0   hsl(var(--glow-hsl) / 50%),
+        inset 0 0 6px 0   hsl(var(--glow-hsl) / 40%),
+        inset 0 0 15px 0  hsl(var(--glow-hsl) / 30%),
+        inset 0 0 25px 2px hsl(var(--glow-hsl) / 20%),
+        inset 0 0 50px 2px hsl(var(--glow-hsl) / 10%),
+        0 0 1px 0   hsl(var(--glow-hsl) / 60%),
+        0 0 3px 0   hsl(var(--glow-hsl) / 50%),
+        0 0 6px 0   hsl(var(--glow-hsl) / 40%),
+        0 0 15px 0  hsl(var(--glow-hsl) / 30%),
+        0 0 25px 2px hsl(var(--glow-hsl) / 20%),
+        0 0 50px 2px hsl(var(--glow-hsl) / 10%);
+    }
+
+    /* sem mouse fino (toque) o efeito nunca é alimentado pelo JS, e quem
+       pediu menos movimento não recebe o script — nos dois casos as
+       camadas ficariam em opacity:0 pela conta de --edge-proximity. Aqui
+       só garantimos que nem cheguem a ser pintadas. */
+    @media (prefers-reduced-motion: reduce) {
+      .glow-frame::before,
+      .glow-frame::after,
+      .glow-frame > .edge-light { display: none; }
+    }
+
     /* ── courses ─────────────────────────────────────── */
     .courses-section { background:var(--white); padding:5rem 0; position:relative; overflow:hidden; }
 
@@ -2746,9 +3002,345 @@ html.theme-dark .hamburger {
     @media (prefers-reduced-motion: reduce) {
       mark.ink { transition:none; }
     }
+
+    /* ── tela de introdução (uma vez por sessão) ──────────────────────
+       O véu cobre tudo: o modal de login, que era a camada mais alta do
+       arquivo, é z-index 50. Ele sai do DOM assim que a animação acaba,
+       então esse 100 não fica pendurado na página depois.
+
+       O gradiente do fundo não é decoração redundante: ele é o que segura
+       a tela enquanto o shader ainda não pintou o primeiro frame, e é o
+       fundo definitivo no caminho em que o WebGL não sobe (GPU na
+       blocklist, contexto recusado). A intro roda igual nos dois casos. */
+    .intro-veil {
+      position: fixed; inset: 0;
+      z-index: 100;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: clamp(1.1rem, 3vw, 1.75rem);
+      overflow: hidden;
+      background: radial-gradient(115% 85% at 50% 50%, #0b111c, #04060b 66%);
+      transition: opacity .65s ease;  /* casa com o FADE do introLoader.js */
+    }
+    .intro-veil.is-leaving { opacity: 0; pointer-events: none; }
+    /* ── o canvas do shader ───────────────────────────────────────────
+       Duas correções de composição moram aqui, e as duas existem pela
+       mesma razão: quem tem que puxar o olho é a logo, não o fundo.
+
+       · a OPACIDADE. O shader vinha em cheio, e o verde competia de igual
+         pra igual com o painel. A 55% ele recua pra atrás sem sumir — e,
+         como o canvas compõe sobre o gradiente navy do .intro-veil, o que
+         sobra escurece na direção da cor da página em vez de acinzentar.
+         O backdrop-filter do painel enxerga o resultado JÁ atenuado (o
+         backdrop é tudo que foi pintado abaixo dele), então o vidro
+         continua borrando o que se vê de verdade;
+
+       · a VINHETA. O CENTER_Y do introLoader.js empurra o desenho do
+         shader pro meio, mas ele é uma CPPN — não dá pra prometer o que
+         aparece nas bordas depois do deslocamento. A máscara resolve isso
+         por fora e sem depender do shader: o miolo passa inteiro e as
+         beiradas se dissolvem, então a mancha lê como centrada mesmo que
+         sobre alguma coisa nos cantos. É a mesma técnica de máscara que o
+         .glow-frame e o .edge-orbit já usam no arquivo. */
+    .intro-veil-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; display: block;
+      opacity: .55;
+      -webkit-mask-image: radial-gradient(105% 78% at 50% 50%,
+                            #000 32%, rgba(0,0,0,.45) 66%, transparent 92%);
+              mask-image: radial-gradient(105% 78% at 50% 50%,
+                            #000 32%, rgba(0,0,0,.45) 66%, transparent 92%);
+    }
+
+    /* ── o painel de vidro ────────────────────────────────────────────
+       Aqui o backdrop-filter finalmente ganha o que precisa: um shader se
+       mexendo por baixo pra ser borrado. É a mesma observação do
+       comentário da .hero-pill — vidro sobre superfície chapada não é
+       vidro, é um retângulo translúcido.
+
+       ── COMO ESTE PAINEL CHEGOU AQUI ──────────────────────────────────
+       A primeira versão era um vidro CLARO: fill branco, brightness()
+       clareando o backdrop, uma borda em gradiente que acendia numa quina
+       e apagava na oposta, e um reflexo diagonal varrendo a superfície em
+       laço. Cada peça dessas tinha um argumento a favor — e o conjunto
+       ficou um cartão claro cheio de efeito flutuando sobre um fundo que
+       é todo escuro.
+
+       Quem resolveu foi um acidente: um print do Dark Reader tentando
+       "escurecer" uma página que já era escura mostrou o painel como um
+       vidro FUMÊ, verde-escuro, com uma borda fina e uniforme e nenhum
+       brilho se mexendo. A extensão tinha achatado justamente os efeitos,
+       e o que sobrou era melhor. Este bloco é esse resultado, agora de
+       propósito:
+
+       · o FILL é verde-navy quase preto — a mesma família do --navyd/--bg
+         escuro do site. O painel lê como uma poça mais funda do próprio
+         véu, não como um objeto de outra cor pousado em cima dele;
+       · o brightness() ESCURECE (.85) em vez de clarear. É o oposto da
+         primeira versão, e é o que separa "vidro fumê" de "vidro leitoso";
+       · a BORDA voltou a ser um `border` estático de 1px. O anel em
+         gradiente é mais sofisticado e estava errado aqui: ele desenha
+         uma fonte de luz, e este painel não tem uma — ele é iluminado por
+         dentro, pelo verde do véu que atravessa. Borda uniforme é o que
+         combina com isso;
+       · NÃO existe mais reflexo varrendo (o ::after com o introSheen).
+         Era a última coisa que lia como "efeito" em vez de "material".
+
+       Se um dia quiser o reflexo de volta, ele era um ::after com uma
+       faixa clara em skewX(-18deg) animando `left` de -60% a 130%. */
+    .intro-panel {
+      position: relative; z-index: 1;
+      display: flex; align-items: center;
+      gap: clamp(.7rem, 2.2vw, 1.4rem);
+      padding: clamp(1rem, 3vw, 1.9rem) clamp(1.4rem, 4vw, 2.6rem);
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(136, 136, 136, 0.16);
+      background: linear-gradient(150deg,
+                    rgba(16,38,28,.62) 0%,
+                    rgba(5,11,9,.46)   48%,
+                    rgba(10,30,21,.58) 100%);
+      backdrop-filter: blur(30px) saturate(150%) brightness(.85);
+      -webkit-backdrop-filter: blur(30px) saturate(150%) brightness(.85);
+      /* a sombra externa afunda o painel; o inset de baixo é a luz que
+         entra pela face inferior e dá espessura ao bloco */
+      box-shadow: 0 40px 90px -20px rgba(0,0,0,.6),
+                  inset 0 -20px 44px -26px rgba(47,213,90,.14);
+      animation: introPanelIn 1s cubic-bezier(.16,1,.3,1) both;
+    }
+
+    /* o respiro verde subindo da base. Sobrou só ele do par de luzes que
+       havia aqui: o pico branco do topo desenhava uma fonte de luz vinda
+       de cima, e no fumê a luz vem de baixo — é o próprio véu atravessando
+       o painel. Uma luz só, e na direção certa. */
+    .intro-panel::before {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(110% 68% at 50% 130%, rgba(47,213,90,.24), transparent 66%);
+    }
+
+    @keyframes introPanelIn {
+      from { opacity: 0; transform: translateY(18px) scale(.94); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── a logo, entrando pela esquerda ───────────────────────────────
+       É o PNG de verdade da marca (o mesmo liderabranca.png que o
+       Headerscroll.js usa dentro da bolinha no tema escuro), e não mais o
+       SVG aproximado que estava aqui. Caminho relativo de propósito: o
+       Headerscroll usa /src/img/... absoluto, que só funciona servido da
+       raiz do domínio — ver a armadilha 2 do CLAUDE.md. */
+    .intro-mark {
+      display: flex; flex-shrink: 0;
+      animation: introMarkIn .95s cubic-bezier(.16,1,.3,1) .15s both;
+    }
+    .intro-mark img {
+      height: clamp(2.6rem, 8.5vw, 5.2rem);
+      width: auto; display: block;
+      filter: drop-shadow(0 6px 18px rgba(0,0,0,.45));
+    }
+    @keyframes introMarkIn {
+      from { opacity: 0; transform: translateX(-44px) rotate(-10deg) scale(.78); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── "Lidera" + o contador ──────────────────────────────────────── */
+    .intro-word {
+      display: flex; align-items: baseline;
+      font-size: clamp(2.1rem, 7.2vw, 4.4rem);
+      font-weight: 800; letter-spacing: -.02em; line-height: 1;
+      /* nem branco puro (cortava contra o fumê) nem apagado demais: no
+         painel escuro o texto não precisa de forca pra ser lido, e baixar
+         o brilho dele é o que faz o verde do 360 ser o ponto alto */
+      color: rgba(231,246,236,.8);
+    }
+    .intro-word-l {
+      animation: introWordIn .95s cubic-bezier(.16,1,.3,1) .36s both;
+    }
+    @keyframes introWordIn {
+      from { opacity: 0; transform: translateX(-22px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── o odômetro ───────────────────────────────────────────────────
+       Cada .intro-digit é uma janela de uma linha de altura com os dez
+       algarismos empilhados dentro; o JS desliza a pilha pra deixar o
+       certo enquadrado (ver rollDigits no introLoader.js).
+
+       O desbotado das pontas é uma MÁSCARA, e não os dois retângulos com
+       gradiente que o componente original sobrepõe. A diferença importa
+       aqui: aqueles retângulos são opacos e precisam saber a cor exata do
+       fundo pra se disfarçarem — por cima de um shader que muda de cor
+       sozinho não existe cor pra acertar. A máscara recorta o próprio
+       texto, então funciona sobre qualquer fundo. */
+    .intro-counter {
+      display: inline-flex;
+      overflow: hidden;
+      line-height: 1;
+      color: var(--green);
+      opacity: 0;
+      animation: introCounterIn .7s ease .5s forwards;
+      -webkit-mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
+              mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
+    }
+    @keyframes introCounterIn { to { opacity: 1; } }
+
+    .intro-digit {
+      position: relative;
+      width: 1ch; height: 1em;
+      font-variant-numeric: tabular-nums;
+    }
+    /* ── âncora de baseline ───────────────────────────────────────────
+       O "360" flutuava acima do "Lidera": os dez algarismos são todos
+       position:absolute, então a coluna não tinha NENHUM conteúdo em
+       fluxo — e sem conteúdo em fluxo não há linha de base pra o
+       align-items:baseline do .intro-word mirar. O navegador caía na
+       borda inferior da caixa, que não é a mesma altura.
+
+       Este dígito fantasma existe só pra devolver essa linha de base.
+       Ele está em fluxo, na mesma fonte e no mesmo tamanho, então a base
+       dele É a base dos algarismos que rolam por cima. visibility:hidden
+       (e não display:none) porque display:none não ocupa lugar nenhum e
+       não teria base pra dar. */
+    .intro-digit::before {
+      content: "0";
+      visibility: hidden;
+    }
+    /* line-height:1em + top:0 alinha a caixa de linha de cada algarismo
+       exatamente com a do fantasma acima; com o flex de antes (que
+       centralizava) elas ficavam alguns pixels fora uma da outra */
+    .intro-digit > span {
+      position: absolute; left: 0; right: 0; top: 0;
+      height: 1em; line-height: 1em;
+      text-align: center;
+    }
+
+    /* ── a pílula de vidro com a assinatura ─────────────────────────── */
+    /* mesmo vidro fumê do .intro-panel — a pílula precisa da mesma família
+       de cor, senão vira a única superfície ainda "clara" da tela */
+    .intro-badge {
+      position: relative; z-index: 1;
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .45rem 1.1rem;
+      border-radius: 50px;
+      background: linear-gradient(140deg, rgba(14,34,25,.6), rgba(5,11,9,.32));
+      border: 1px solid rgba(136, 136, 136, 0.16);
+      backdrop-filter: blur(18px) saturate(150%) brightness(.88);
+      -webkit-backdrop-filter: blur(18px) saturate(150%) brightness(.88);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35),
+                  inset 0 1px 0 rgba(255,255,255,.10);
+      font-size: clamp(.7rem, 1.8vw, .82rem);
+      font-weight: 600; font-style: italic;
+      color: rgba(231,246,236,.86);
+      animation: introBadgeIn .85s cubic-bezier(.16,1,.3,1) .72s both;
+    }
+    @keyframes introBadgeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* a intro inteira é pulada em prefers-reduced-motion (o véu nem chega
+       a ficar no DOM — ver o script no topo do body), então isto aqui é só
+       a rede de segurança pra quem chegar neste CSS por outro caminho */
+    @media (prefers-reduced-motion: reduce) {
+      .intro-panel, .intro-mark,
+      .intro-word-l, .intro-counter, .intro-badge { animation: none; }
+      .intro-counter { opacity: 1; }
+    }
   </style>
 </head>
 <body>
+
+<!-- ── Tela de introdução ────────────────────────────────────────────
+     O markup está inline, e não criado por JS como o botão de tema, de
+     propósito: isto é uma tela de LOADING — ela precisa estar pintada no
+     primeiro frame, antes de os outros ~5 mil elementos abaixo serem
+     sequer analisados. Criada por script, ela só apareceria depois.
+
+     aria-hidden: é marca, não conteúdo. Quem usa leitor de tela vai
+     direto pro conteúdo da página, que já está aí embaixo — e o véu se
+     remove sozinho em ~4s. ────────────────────────────────────────── -->
+<div class="intro-veil" id="introVeil" aria-hidden="true">
+  <canvas class="intro-veil-canvas" id="introCanvas"></canvas>
+
+  <div class="intro-panel">
+    <!-- a logo de verdade da marca, em branco: o mesmo arquivo que o
+         Headerscroll.js mostra dentro da bolinha no tema escuro. Caminho
+         RELATIVO — o Headerscroll usa /src/img/... absoluto, que só
+         funciona servido da raiz do domínio (armadilha 2 do CLAUDE.md). -->
+    <span class="intro-mark">
+      <img src="src/img/liderabranca.png" alt="" />
+    </span>
+
+    <!-- o contador não é um número solto: ele fecha a marca. Sai de 000 e
+         para em 360, e nesse instante o painel lê "Lidera360". -->
+    <span class="intro-word">
+      <span class="intro-word-l">Lidera</span><span class="intro-counter" id="introCounter"></span>
+    </span>
+  </div>
+
+  <p class="intro-badge"><span class="badge-dot"></span>Aprenda, evolua e lidere.</p>
+</div>
+
+<script>
+  /* ── mostra a intro ou não? ────────────────────────────────────────
+     Síncrono e aqui, colado no markup, porque a decisão precisa ser
+     tomada ANTES da primeira pintura. Se ela viesse do introLoader.js —
+     ou de qualquer coisa pendurada no DOMContentLoaded — quem já viu a
+     intro veria um lampejo dela a cada refresh.
+
+     sessionStorage, e não localStorage: ele sobrevive ao F5 e morre
+     quando a ABA fecha, que é exatamente a regra pedida. Recarregar não
+     repete a intro; fechar a aba e abrir a URL de novo, sim.
+
+     O try/catch não é decoração: o acesso em si pode ESTOURAR (janela
+     anônima com dados de site bloqueados, file:// em alguns navegadores).
+     Se estourar, o certo é mostrar a intro — perder a chave é motivo pra
+     repetir uma animação, nunca pra derrubar a página. ──────────────── */
+  ;(function () {
+    var veil = document.getElementById('introVeil')
+    if (!veil) return
+
+    var KEY = 'lidera360:intro-seen'
+    var visto = false
+    try { visto = sessionStorage.getItem(KEY) === '1' } catch (e) {}
+
+    // quem pediu menos movimento não recebe uma tela cheia de shader com
+    // números girando: vai direto pra página
+    var parado = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (visto || parado) { veil.parentNode.removeChild(veil); return }
+
+    // marcado na ENTRADA e não na saída: recarregar no meio da animação
+    // não pode fazer ela recomeçar do zero
+    try { sessionStorage.setItem(KEY, '1') } catch (e) {}
+
+    // o módulo de rolagem do fim do body também lê este overflow pra saber
+    // que não deve responder à roda enquanto algo cobre a página
+    document.body.style.overflow = 'hidden'
+
+    /* ── fila de espera das animações da página ─────────────────────
+       Sem isto o hero faz todo o número dele (typewriter, reveals,
+       marca-texto, o traçado do gráfico) escondido atrás do véu, e quando
+       a intro sai a página já está parada — o visitante perde justamente
+       a entrada. Quem consome a fila é o introLoader.js, e ele a esvazia
+       no COMEÇO do fade, pra uma coisa encadear na outra. */
+    window.lideraIntroActive = true
+    window.lideraIntroQueue = []
+  })()
+
+  /* Fora da IIFE porque precisa existir NOS DOIS casos: com intro, empilha;
+     sem intro (refresh, movimento reduzido), executa na hora. Os pontos de
+     partida do scroll reveal e do marca-texto, lá no fim do body, chamam
+     esta função em vez de arrancarem sozinhos. */
+  window.lideraOnIntroDone = function (fn) {
+    if (window.lideraIntroActive) window.lideraIntroQueue.push(fn)
+    else fn()
+  }
+</script>
+<script src="introLoader.js"></script>
 
 <!-- ── Slide menu backdrop ────────────────────────── -->
 <div class="menu-backdrop" id="menuBackdrop"></div>
@@ -3048,15 +3640,22 @@ html.theme-dark .hamburger {
       </div>
     </div>
 
-    <!-- stats -->
-    <div class="stats-bar" data-reveal>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val" id="statTrilhasHero">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val" id="statModulosHero">0</p><p class="stat-lbl">Módulos práticos</p></div>
-      <!-- "14 dias / teste grátis" não existe na documentação (ela prevê
-           demonstração gratuita e teste piloto). Trocado pelo dado de
-           mercado que fundamenta o projeto na apresentação e no ABNT. -->
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val">89%</p><p class="stat-lbl">das empresas investem em T&amp;D</p></div>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
+    <!-- stats — embrulhadas no .glow-frame (BorderGlow; ver o CSS).
+         O [data-reveal] subiu da .stats-bar pro wrapper: se ficasse na
+         barra, o quadro do brilho ficaria plantado na tela enquanto ela
+         subia por dentro dele. As células mantêm o próprio
+         data-reveal="fade", então o escalonamento não mudou. -->
+    <div class="glow-frame" data-reveal>
+      <span class="edge-light" aria-hidden="true"></span>
+      <div class="stats-bar">
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val" id="statTrilhasHero">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val" id="statModulosHero">0</p><p class="stat-lbl">Módulos práticos</p></div>
+        <!-- "14 dias / teste grátis" não existe na documentação (ela prevê
+             demonstração gratuita e teste piloto). Trocado pelo dado de
+             mercado que fundamenta o projeto na apresentação e no ABNT. -->
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val">89%</p><p class="stat-lbl">das empresas investem em T&amp;D</p></div>
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="hero-stats"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
+      </div>
     </div>
   </div>
 </section>
@@ -3072,12 +3671,17 @@ html.theme-dark .hamburger {
       </div>
     </div>
 
-    <!-- resumo rápido -->
-    <div class="stats-bar" style="margin-top:0; margin-bottom:2.5rem;" data-reveal>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val" id="statTrilhas">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val" id="statModulos">0</p><p class="stat-lbl">Módulos no total</p></div>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
-      <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val">Seu ritmo</p><p class="stat-lbl"><mark class="ink">Avance quando quiser</mark></p></div>
+    <!-- resumo rápido — mesmo .glow-frame do hero. As margens do bloco
+         passaram pro wrapper; a regra .glow-frame > .stats-bar zera a
+         margem da barra de dentro. -->
+    <div class="glow-frame" style="margin-top:0; margin-bottom:2.5rem;" data-reveal>
+      <span class="edge-light" aria-hidden="true"></span>
+      <div class="stats-bar">
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val" id="statTrilhas">0</p><p class="stat-lbl">Trilhas disponíveis</p></div>
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val" id="statModulos">0</p><p class="stat-lbl">Módulos no total</p></div>
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val">1</p><p class="stat-lbl">Certificado por módulo</p></div>
+        <div class="stat-cell" data-reveal="fade" data-reveal-group="dash-stats"><p class="stat-val">Seu ritmo</p><p class="stat-lbl"><mark class="ink">Avance quando quiser</mark></p></div>
+      </div>
     </div>
 
     <div class="trilha-grid" id="trilhaGrid"></div>
@@ -3850,9 +4454,14 @@ html.theme-dark .hamburger {
   })()
 
     window.initScrollReveal = initScrollReveal
-    document.addEventListener('DOMContentLoaded', () => initScrollReveal())
+    /* enquanto a intro estiver no ar a página inteira espera: revelar o
+       hero atrás de um véu opaco gasta a entrada sem ninguém ver. O
+       lideraOnIntroDone está definido no topo do body e, quando não há
+       intro (refresh, movimento reduzido), executa na hora. */
+    function bootReveal () { window.lideraOnIntroDone(() => initScrollReveal()) }
+    document.addEventListener('DOMContentLoaded', bootReveal)
     // caso o script rode depois do DOMContentLoaded (defer/final do body)
-    if (document.readyState !== 'loading') initScrollReveal()
+    if (document.readyState !== 'loading') bootReveal()
   })()
 
   /* ── seção corrente: acende o .section-eyebrow de quem está na tela ──
@@ -5004,6 +5613,58 @@ html.theme-dark .hamburger {
   initTiltHover(document.getElementById('trilhaGrid'), '.trilha-card')
   initTiltHover(document.querySelector('.plans-grid'), '.plan-card')
 
+  /* ── BorderGlow: alimenta --edge-proximity e --cursor-angle ──────────
+     A parte de runtime do componente do react-bits — todo o resto virou
+     CSS (ver a seção .glow-frame lá em cima). Escreve direto no
+     pointermove, sem rAF, igual o initTiltHover aqui do lado: são o mesmo
+     tipo de efeito e não faz sentido uma ser mais cara que a outra.
+
+     Os dois gates são os mesmos do resto dos hovers do arquivo: em tela
+     de toque o :hover gruda depois do toque e o brilho ficaria aceso pra
+     sempre, e quem pediu menos movimento não recebe nada — nos dois casos
+     as custom properties ficam no default (--edge-proximity: 0), a conta
+     de opacidade dá negativo e nenhuma camada pinta. ── */
+  ;(function () {
+    const frames = Array.from(document.querySelectorAll('.glow-frame'))
+    if (!frames.length) return
+    if (!window.matchMedia('(hover:hover) and (pointer:fine)').matches) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    frames.forEach(frame => {
+      frame.addEventListener('pointermove', (e) => {
+        const rect = frame.getBoundingClientRect()
+        const cx = rect.width / 2
+        const cy = rect.height / 2
+        const dx = e.clientX - rect.left - cx
+        const dy = e.clientY - rect.top - cy
+
+        /* proximidade da borda: 0 no centro, 1 encostando em QUALQUER
+           beirada. kx/ky são quantas vezes o vetor até o cursor caberia
+           até a borda em cada eixo; o menor dos dois é o eixo que vai
+           encostar primeiro, e o inverso dele é a proximidade. É isso que
+           faz o valor chegar a 1 tanto no lado quanto no topo, apesar de
+           a caixa ser muito mais larga do que alta. */
+        const kx = dx !== 0 ? cx / Math.abs(dx) : Infinity
+        const ky = dy !== 0 ? cy / Math.abs(dy) : Infinity
+        const edge = Math.min(Math.max(1 / Math.min(kx, ky), 0), 1)
+
+        /* ângulo do cursor visto do centro. O +90 é porque atan2 devolve
+           0° apontando pra DIREITA, e o conic-gradient que recorta as
+           camadas conta a partir do TOPO. */
+        let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90
+        if (angle < 0) angle += 360
+
+        /* posição crua do cursor: ancora a máscara do ::after, que é a
+           camada que acende as frestas entre as células. É o mesmo par
+           --mx/--my que o initTiltHover escreve nos cards. */
+        frame.style.setProperty('--mx', (e.clientX - rect.left) + 'px')
+        frame.style.setProperty('--my', (e.clientY - rect.top) + 'px')
+        frame.style.setProperty('--edge-proximity', (edge * 100).toFixed(2))
+        frame.style.setProperty('--cursor-angle', angle.toFixed(2) + 'deg')
+      })
+    })
+  })()
+
   /* ── abrir/fechar os módulos do trilha-card. Antes era um <details>
      nativo; agora que o card também tem o tilt 3D (que escreve
      "transform" via JS a cada frame de mousemove), um <details> real
@@ -5280,7 +5941,10 @@ html.theme-dark .hamburger {
       })
     }, { threshold: 0.15, rootMargin: '0px 0px -60px 0px' })
 
-    groups.forEach((list, host) => io.observe(host))
+    /* espera a intro sair pelo mesmo motivo do scroll reveal: a caneta
+       passando por cima de um texto escondido atrás do véu é um efeito
+       gasto à toa. Sem intro, roda na hora. */
+    window.lideraOnIntroDone(() => groups.forEach((list, host) => io.observe(host)))
   })()
 
   /* ── planos: toggle deslizante dentro da mesma caixa ─────────────
